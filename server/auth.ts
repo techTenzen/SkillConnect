@@ -1,4 +1,8 @@
 import passport from "passport";
+
+import { Strategy as GoogleStrategy } from "passport-google-oauth20";
+import { Strategy as GitHubStrategy } from "passport-github2";
+
 import { Strategy as LocalStrategy } from "passport-local";
 import { Express } from "express";
 import session from "express-session";
@@ -29,6 +33,63 @@ async function comparePasswords(supplied: string, stored: string) {
 }
 
 export function setupAuth(app: Express) {
+  // OAuth Configuration
+  passport.use(
+    new GoogleStrategy(
+      {
+        clientID: process.env.GOOGLE_CLIENT_ID!,
+        clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+        callbackURL: "/auth/google/callback",
+      },
+      async (accessToken, refreshToken, profile, done) => {
+        try {
+          let user = await storage.getUserByOAuthId(profile.id);
+          if (!user) {
+            user = await storage.createUser({
+              username: profile.emails![0].value,
+              oauthId: profile.id,
+              avatar: profile.photos?.[0].value,
+              bio: "",
+              skills: {},
+              social: {},
+            });
+          }
+          done(null, user);
+        } catch (error) {
+          done(error as Error);
+        }
+      }
+    )
+  );
+
+  passport.use(
+    new GitHubStrategy(
+      {
+        clientID: process.env.GITHUB_CLIENT_ID!,
+        clientSecret: process.env.GITHUB_CLIENT_SECRET!,
+        callbackURL: "/auth/github/callback",
+      },
+      async (accessToken, refreshToken, profile, done) => {
+        try {
+          let user = await storage.getUserByOAuthId(profile.id);
+          if (!user) {
+            user = await storage.createUser({
+              username: profile.username!,
+              oauthId: profile.id,
+              avatar: profile._json.avatar_url,
+              bio: "",
+              skills: {},
+              social: {},
+            });
+          }
+          done(null, user);
+        } catch (error) {
+          done(error as Error);
+        }
+      }
+    )
+  );
+
   const sessionSettings: session.SessionOptions = {
     secret: process.env.REPL_ID!,
     resave: false,
@@ -93,4 +154,25 @@ export function setupAuth(app: Express) {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     res.json(req.user);
   });
+
+  // Google OAuth routes
+  app.get(
+    "/auth/google",
+    passport.authenticate("google", { scope: ["profile", "email"] })
+  );
+
+  app.get(
+    "/auth/google/callback",
+    passport.authenticate("google", { failureRedirect: "/auth" }),
+    (req, res) => res.redirect("/dashboard")
+  );
+
+  // GitHub OAuth routes
+  app.get("/auth/github", passport.authenticate("github", { scope: ["user:email"] }));
+
+  app.get(
+    "/auth/github/callback",
+    passport.authenticate("github", { failureRedirect: "/auth" }),
+    (req, res) => res.redirect("/dashboard")
+  );
 }

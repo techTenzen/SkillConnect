@@ -80,11 +80,19 @@ export default function AuthPage() {
                 </CardHeader>
                 <CardContent>
                   <div className="grid gap-4">
-                    <Button variant="outline" className="gap-2">
+                    <Button
+                      variant="outline"
+                      className="gap-2"
+                      onClick={() => window.location.href = '/auth/github'}
+                    >
                       <Github className="h-4 w-4" />
                       Continue with GitHub
                     </Button>
-                    <Button variant="outline" className="gap-2">
+                    <Button
+                      variant="outline"
+                      className="gap-2"
+                      onClick={() => window.location.href = '/auth/google'}
+                    >
                       <Mail className="h-4 w-4" />
                       Continue with Google
                     </Button>
