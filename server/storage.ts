@@ -1,105 +1,94 @@
 import { InsertUser, User, Project, Discussion } from "@shared/schema";
-import createMemoryStore from "memorystore";
+import { users, projects, discussions } from "@shared/schema";
+import { db } from "./db";
+import { eq } from "drizzle-orm";
 import session from "express-session";
+import connectPg from "connect-pg-simple";
+import { pool } from "./db";
 
-const MemoryStore = createMemoryStore(session);
+const PostgresSessionStore = connectPg(session);
 
 export interface IStorage {
-  sessionStore: session.SessionStore;
-  
+  sessionStore: session.Store;
+
   // Users
   getUser(id: number): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
   updateUser(id: number, updates: Partial<User>): Promise<User | undefined>;
-  
+
   // Projects
   createProject(project: Omit<Project, "id">): Promise<Project>;
   getProject(id: number): Promise<Project | undefined>;
   getAllProjects(): Promise<Project[]>;
-  
+
   // Discussions
   createDiscussion(discussion: Omit<Discussion, "id">): Promise<Discussion>;
   getDiscussion(id: number): Promise<Discussion | undefined>;
   getAllDiscussions(): Promise<Discussion[]>;
 }
 
-export class MemStorage implements IStorage {
-  private users: Map<number, User>;
-  private projects: Map<number, Project>;
-  private discussions: Map<number, Discussion>;
-  sessionStore: session.SessionStore;
-  private currentUserId: number;
-  private currentProjectId: number;
-  private currentDiscussionId: number;
+export class DatabaseStorage implements IStorage {
+  sessionStore: session.Store;
 
   constructor() {
-    this.users = new Map();
-    this.projects = new Map();
-    this.discussions = new Map();
-    this.currentUserId = 1;
-    this.currentProjectId = 1;
-    this.currentDiscussionId = 1;
-    this.sessionStore = new MemoryStore({
-      checkPeriod: 86400000,
+    this.sessionStore = new PostgresSessionStore({
+      pool,
+      createTableIfMissing: true,
     });
   }
 
   async getUser(id: number): Promise<User | undefined> {
-    return this.users.get(id);
+    const [user] = await db.select().from(users).where(eq(users.id, id));
+    return user;
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
-    return Array.from(this.users.values()).find(
-      (user) => user.username === username,
-    );
+    const [user] = await db.select().from(users).where(eq(users.username, username));
+    return user;
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
-    const id = this.currentUserId++;
-    const user = { ...insertUser, id };
-    this.users.set(id, user);
+    const [user] = await db.insert(users).values(insertUser).returning();
     return user;
   }
 
   async updateUser(id: number, updates: Partial<User>): Promise<User | undefined> {
-    const user = this.users.get(id);
-    if (!user) return undefined;
-    
-    const updated = { ...user, ...updates };
-    this.users.set(id, updated);
-    return updated;
+    const [user] = await db
+      .update(users)
+      .set(updates)
+      .where(eq(users.id, id))
+      .returning();
+    return user;
   }
 
   async createProject(project: Omit<Project, "id">): Promise<Project> {
-    const id = this.currentProjectId++;
-    const newProject = { ...project, id };
-    this.projects.set(id, newProject);
+    const [newProject] = await db.insert(projects).values(project).returning();
     return newProject;
   }
 
   async getProject(id: number): Promise<Project | undefined> {
-    return this.projects.get(id);
+    const [project] = await db.select().from(projects).where(eq(projects.id, id));
+    return project;
   }
 
   async getAllProjects(): Promise<Project[]> {
-    return Array.from(this.projects.values());
+    return db.select().from(projects);
   }
 
   async createDiscussion(discussion: Omit<Discussion, "id">): Promise<Discussion> {
-    const id = this.currentDiscussionId++;
-    const newDiscussion = { ...discussion, id };
-    this.discussions.set(id, newDiscussion);
+    const [newDiscussion] = await db.insert(discussions).values(discussion).returning();
     return newDiscussion;
   }
 
   async getDiscussion(id: number): Promise<Discussion | undefined> {
-    return this.discussions.get(id);
+    const [discussion] = await db.select().from(discussions).where(eq(discussions.id, id));
+    return discussion;
   }
 
   async getAllDiscussions(): Promise<Discussion[]> {
-    return Array.from(this.discussions.values());
+    return db.select().from(discussions);
   }
 }
 
-export const storage = new MemStorage();
+export const storage = new DatabaseStorage();
