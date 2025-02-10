@@ -52,13 +52,9 @@ export function NavBar() {
       <div className="flex h-14 items-center px-4">
         <div className="flex items-center space-x-4 lg:space-x-6">
           {navItems.map(({ path, label, icon: Icon }) => (
-            <Link key={path} href={path}>
-              <a
-                className={`flex items-center space-x-2 text-sm font-medium transition-colors hover:text-primary`}
-              >
-                <Icon className="h-4 w-4" />
-                <span>{label}</span>
-              </a>
+            <Link key={path} href={path} className="flex items-center space-x-2 text-sm font-medium transition-colors hover:text-primary">
+              <Icon className="h-4 w-4" />
+              <span>{label}</span>
             </Link>
           ))}
         </div>
