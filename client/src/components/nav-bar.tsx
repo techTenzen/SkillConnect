@@ -49,9 +49,9 @@ export default function NavBar() {
                 className="relative h-8 w-8 rounded-full"
               >
                 <Avatar className="h-8 w-8">
-                  <AvatarImage src={user?.avatar} alt={user?.username} />
+                  <AvatarImage src={user?.avatar || undefined} alt={user?.username || 'User'} />
                   <AvatarFallback>
-                    {user?.username?.charAt(0).toUpperCase()}
+                    {user?.username?.charAt(0).toUpperCase() || 'U'}
                   </AvatarFallback>
                 </Avatar>
               </Button>

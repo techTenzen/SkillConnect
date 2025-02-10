@@ -97,7 +97,6 @@ export default function ChatPage() {
   return (
     <div className="min-h-screen bg-background">
       <NavBar />
-
       <main className="container mx-auto px-4 py-8">
         <Card className="max-w-4xl mx-auto">
           <CardHeader>
@@ -132,9 +131,9 @@ export default function ChatPage() {
                         </Avatar>
                       ) : (
                         <Avatar>
-                          <AvatarImage src={user?.avatar} />
+                          <AvatarImage src={user?.avatar || undefined} />
                           <AvatarFallback>
-                            {user?.username?.charAt(0).toUpperCase()}
+                            {user?.username?.charAt(0).toUpperCase() || 'U'}
                           </AvatarFallback>
                         </Avatar>
                       )}
