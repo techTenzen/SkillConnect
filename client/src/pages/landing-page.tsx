@@ -47,9 +47,11 @@ export default function LandingPage() {
                 Get Started
               </Button>
             </Link>
-            <Button size="lg" variant="outline">
-              Explore Skills
-            </Button>
+            <Link href="/projects">
+              <Button size="lg" variant="outline">
+                Explore Projects
+              </Button>
+            </Link>
           </div>
         </div>
       </motion.section>
@@ -67,7 +69,7 @@ export default function LandingPage() {
               <Users className="h-12 w-12 text-purple-400 mb-4" />
               <h3 className="text-xl font-semibold mb-2">Find Peers</h3>
               <p className="text-muted-foreground">
-                Connect with students who share your interests and skills.
+                Connect with students who share your interests and skills. Build lasting relationships and learn from each other.
               </p>
             </motion.div>
 
@@ -80,7 +82,7 @@ export default function LandingPage() {
               <Handshake className="h-12 w-12 text-purple-400 mb-4" />
               <h3 className="text-xl font-semibold mb-2">Collaborate</h3>
               <p className="text-muted-foreground">
-                Work together on projects and learn from each other.
+                Work on exciting projects together. Share knowledge, skills, and create something amazing as a team.
               </p>
             </motion.div>
 
@@ -93,7 +95,7 @@ export default function LandingPage() {
               <LightbulbIcon className="h-12 w-12 text-purple-400 mb-4" />
               <h3 className="text-xl font-semibold mb-2">Get Help</h3>
               <p className="text-muted-foreground">
-                Ask questions and get help from AI or peers.
+                Access AI-powered assistance and peer support. Get answers to your questions and guidance when you need it.
               </p>
             </motion.div>
           </div>

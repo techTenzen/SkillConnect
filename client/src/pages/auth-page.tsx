@@ -23,6 +23,8 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Github, Mail } from "lucide-react";
+import { Separator } from "@/components/ui/separator";
 
 export default function AuthPage() {
   const { user, loginMutation, registerMutation } = useAuth();
@@ -30,7 +32,7 @@ export default function AuthPage() {
 
   useEffect(() => {
     if (user) {
-      setLocation("/");
+      setLocation("/dashboard");
     }
   }, [user, setLocation]);
 
@@ -77,6 +79,28 @@ export default function AuthPage() {
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
+                  <div className="grid gap-4">
+                    <Button variant="outline" className="gap-2">
+                      <Github className="h-4 w-4" />
+                      Continue with GitHub
+                    </Button>
+                    <Button variant="outline" className="gap-2">
+                      <Mail className="h-4 w-4" />
+                      Continue with Google
+                    </Button>
+                  </div>
+
+                  <div className="relative my-4">
+                    <div className="absolute inset-0 flex items-center">
+                      <Separator />
+                    </div>
+                    <div className="relative flex justify-center text-xs uppercase">
+                      <span className="bg-background px-2 text-muted-foreground">
+                        Or continue with
+                      </span>
+                    </div>
+                  </div>
+
                   <Form {...loginForm}>
                     <form
                       onSubmit={loginForm.handleSubmit((data) =>
@@ -132,6 +156,28 @@ export default function AuthPage() {
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
+                  <div className="grid gap-4">
+                    <Button variant="outline" className="gap-2">
+                      <Github className="h-4 w-4" />
+                      Sign up with GitHub
+                    </Button>
+                    <Button variant="outline" className="gap-2">
+                      <Mail className="h-4 w-4" />
+                      Sign up with Google
+                    </Button>
+                  </div>
+
+                  <div className="relative my-4">
+                    <div className="absolute inset-0 flex items-center">
+                      <Separator />
+                    </div>
+                    <div className="relative flex justify-center text-xs uppercase">
+                      <span className="bg-background px-2 text-muted-foreground">
+                        Or continue with
+                      </span>
+                    </div>
+                  </div>
+
                   <Form {...registerForm}>
                     <form
                       onSubmit={registerForm.handleSubmit((data) =>
@@ -165,22 +211,9 @@ export default function AuthPage() {
                           </FormItem>
                         )}
                       />
-                      <FormField
-                        control={registerForm.control}
-                        name="avatar"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Avatar URL</FormLabel>
-                            <FormControl>
-                              <Input {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
                       <Button
                         type="submit"
-                        className="w-full"
+                        className="w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600"
                         disabled={registerMutation.isPending}
                       >
                         {registerMutation.isPending
