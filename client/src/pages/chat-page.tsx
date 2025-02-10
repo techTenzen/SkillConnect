@@ -32,7 +32,7 @@ export default function ChatPage() {
     {
       id: "welcome",
       role: "assistant",
-      content: "Hi! I'm your AI assistant. How can I help you today?",
+      content: "Hi! I'm your AI assistant. I'm currently in demo mode, but I'll still try to help you!",
       timestamp: new Date(),
     },
   ]);
@@ -41,6 +41,10 @@ export default function ChatPage() {
   const chatMutation = useMutation({
     mutationFn: async (message: string) => {
       const res = await apiRequest("POST", "/api/chat", { message });
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.message || "Failed to send message");
+      }
       return res.json();
     },
     onSuccess: (data) => {
@@ -60,6 +64,15 @@ export default function ChatPage() {
         description: error.message,
         variant: "destructive",
       });
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: Date.now().toString(),
+          role: "assistant",
+          content: "Sorry, I'm having trouble processing your message right now. Please try again later.",
+          timestamp: new Date(),
+        },
+      ]);
     },
   });
 
@@ -79,21 +92,6 @@ export default function ChatPage() {
     chatMutation.mutate(input);
   };
 
-  const container = {
-    hidden: { opacity: 0 },
-    show: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.1,
-      },
-    },
-  };
-
-  const item = {
-    hidden: { opacity: 0, x: -20 },
-    show: { opacity: 1, x: 0 },
-  };
-
   return (
     <div className="min-h-screen bg-background">
       <NavBar />
@@ -108,16 +106,16 @@ export default function ChatPage() {
           <CardContent>
             <ScrollArea className="h-[600px] pr-4">
               <motion.div
-                variants={container}
-                initial="hidden"
-                animate="show"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
                 className="space-y-4"
               >
                 <AnimatePresence>
                   {messages.map((message) => (
                     <motion.div
                       key={message.id}
-                      variants={item}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
                       className={`flex items-start gap-3 ${
                         message.role === "assistant" ? "flex-row" : "flex-row-reverse"
                       }`}
@@ -125,13 +123,11 @@ export default function ChatPage() {
                       {message.role === "assistant" ? (
                         <Avatar>
                           <AvatarFallback>AI</AvatarFallback>
-                          <AvatarImage>
-                            <Bot className="h-10 w-10 text-primary" />
-                          </AvatarImage>
+                          <Bot className="h-6 w-6 text-primary" />
                         </Avatar>
                       ) : (
                         <Avatar>
-                          <AvatarImage src={user?.avatar || undefined} />
+                          <AvatarImage src={user?.avatar || undefined} alt={user?.username || 'User'} />
                           <AvatarFallback>
                             {user?.username?.charAt(0).toUpperCase() || 'U'}
                           </AvatarFallback>
