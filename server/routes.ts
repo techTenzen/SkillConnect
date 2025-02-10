@@ -27,15 +27,20 @@ export function registerRoutes(app: Express): Server {
   app.post("/api/projects", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
 
-    const validated = insertProjectSchema.parse(req.body);
-    const project = await storage.createProject({
-      ...validated,
-      ownerId: req.user.id,
-      members: [req.user.id],
-      status: "open",
-    });
+    try {
+      const validated = insertProjectSchema.parse(req.body);
+      const project = await storage.createProject({
+        ...validated,
+        ownerId: req.user.id,
+        members: [req.user.id],
+        status: "open",
+      });
 
-    res.status(201).json(project);
+      res.status(201).json(project);
+    } catch (error) {
+      console.error("Project creation error:", error);
+      res.status(400).json({ message: "Invalid project data" });
+    }
   });
 
   // Discussion routes
@@ -47,15 +52,20 @@ export function registerRoutes(app: Express): Server {
   app.post("/api/discussions", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
 
-    const validated = insertDiscussionSchema.parse(req.body);
-    const discussion = await storage.createDiscussion({
-      ...validated,
-      authorId: req.user.id,
-      upvotes: 0,
-      createdAt: new Date().toISOString(),
-    });
+    try {
+      const validated = insertDiscussionSchema.parse(req.body);
+      const discussion = await storage.createDiscussion({
+        ...validated,
+        authorId: req.user.id,
+        upvotes: 0,
+        createdAt: new Date().toISOString(),
+      });
 
-    res.status(201).json(discussion);
+      res.status(201).json(discussion);
+    } catch (error) {
+      console.error("Discussion creation error:", error);
+      res.status(400).json({ message: "Invalid discussion data" });
+    }
   });
 
   // AI Chat route
@@ -63,10 +73,17 @@ export function registerRoutes(app: Express): Server {
     if (!req.isAuthenticated()) return res.sendStatus(401);
 
     try {
-      const message = await getAIResponse(req.body.message);
-      res.json({ message });
+      if (!req.body.message) {
+        return res.status(400).json({ message: "Message is required" });
+      }
+
+      const response = await getAIResponse(req.body.message);
+      res.json({ message: response });
     } catch (error) {
-      res.status(500).json({ message: "Failed to get AI response" });
+      console.error("AI chat error:", error);
+      res.status(500).json({ 
+        message: "An error occurred while processing your message. Please try again later." 
+      });
     }
   });
 
