@@ -42,7 +42,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Eye, Loader2, MessageSquare, Plus, SlidersHorizontal } from "lucide-react";
+import { Eye, Image as ImageIcon, Loader2, MessageSquare, Plus, SlidersHorizontal, X } from "lucide-react";
+import { format } from "date-fns";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { cn } from "@/lib/utils";
 
 export default function ProjectsPage() {
   const { user } = useAuth();
@@ -50,17 +54,31 @@ export default function ProjectsPage() {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [sortBy, setSortBy] = useState("recent");
+  const [date, setDate] = useState<Date>();
 
   const { data: projects, isLoading } = useQuery<Project[]>({
     queryKey: ["/api/projects"],
   });
 
   const form = useForm({
-    resolver: zodResolver(insertProjectSchema),
+    resolver: zodResolver(
+      insertProjectSchema.extend({
+        tools: z.array(z.string()),
+        rolesSought: z.array(z.string()),
+        setting: z.enum(["remote", "in-person"]),
+        location: z.string(),
+        deadline: z.date(),
+      })
+    ),
     defaultValues: {
       title: "",
       description: "",
       skills: [],
+      tools: [],
+      rolesSought: [],
+      setting: "in-person",
+      location: "",
+      deadline: new Date(),
     },
   });
 
@@ -117,67 +135,196 @@ export default function ProjectsPage() {
                   New Project
                 </Button>
               </DialogTrigger>
-              <DialogContent>
+              <DialogContent className="max-w-2xl">
                 <DialogHeader>
-                  <DialogTitle>Create New Project</DialogTitle>
+                  <DialogTitle>About The Project</DialogTitle>
                 </DialogHeader>
                 <Form {...form}>
                   <form
                     onSubmit={form.handleSubmit((data) => createMutation.mutate(data))}
-                    className="space-y-4"
+                    className="space-y-6"
                   >
-                    <FormField
-                      control={form.control}
-                      name="title"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Title</FormLabel>
-                          <FormControl>
-                            <Input {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
+                    <div className="space-y-4">
+                      <FormField
+                        control={form.control}
+                        name="title"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Project Title</FormLabel>
+                            <FormControl>
+                              <Input {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
 
-                    <FormField
-                      control={form.control}
-                      name="description"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Description</FormLabel>
-                          <FormControl>
-                            <Textarea {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
+                      <FormField
+                        control={form.control}
+                        name="description"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Project Details</FormLabel>
+                            <FormControl>
+                              <Textarea {...field} className="min-h-[100px]" />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
 
-                    <FormField
-                      control={form.control}
-                      name="skills"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Required Skills (comma-separated)</FormLabel>
-                          <FormControl>
-                            <Input
-                              {...field}
-                              value={field.value.join(", ")}
-                              onChange={(e) =>
-                                field.onChange(
-                                  e.target.value
-                                    .split(",")
-                                    .map((s) => s.trim())
-                                    .filter(Boolean)
-                                )
-                              }
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
+                      <div className="grid gap-4 md:grid-cols-2">
+                        <FormField
+                          control={form.control}
+                          name="tools"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Tools</FormLabel>
+                              <FormControl>
+                                <Input
+                                  placeholder="e.g., Photoshop, Canva"
+                                  value={field.value.join(", ")}
+                                  onChange={(e) =>
+                                    field.onChange(
+                                      e.target.value
+                                        .split(",")
+                                        .map((s) => s.trim())
+                                        .filter(Boolean)
+                                    )
+                                  }
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        <FormField
+                          control={form.control}
+                          name="rolesSought"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Roles Sought</FormLabel>
+                              <FormControl>
+                                <Input
+                                  placeholder="e.g., Designer, Developer"
+                                  value={field.value.join(", ")}
+                                  onChange={(e) =>
+                                    field.onChange(
+                                      e.target.value
+                                        .split(",")
+                                        .map((s) => s.trim())
+                                        .filter(Boolean)
+                                    )
+                                  }
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+
+                      <div className="grid gap-4 md:grid-cols-2">
+                        <FormField
+                          control={form.control}
+                          name="setting"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Setting</FormLabel>
+                              <Select
+                                onValueChange={field.onChange}
+                                defaultValue={field.value}
+                              >
+                                <FormControl>
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Select setting" />
+                                  </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                  <SelectItem value="in-person">In-Person</SelectItem>
+                                  <SelectItem value="remote">Remote</SelectItem>
+                                </SelectContent>
+                              </Select>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        <FormField
+                          control={form.control}
+                          name="location"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Location</FormLabel>
+                              <FormControl>
+                                <Input {...field} placeholder="e.g., Wayne, PA" />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+
+                      <FormField
+                        control={form.control}
+                        name="deadline"
+                        render={({ field }) => (
+                          <FormItem className="flex flex-col">
+                            <FormLabel>Deadline</FormLabel>
+                            <Popover>
+                              <PopoverTrigger asChild>
+                                <FormControl>
+                                  <Button
+                                    variant="outline"
+                                    className={cn(
+                                      "w-full pl-3 text-left font-normal",
+                                      !field.value && "text-muted-foreground"
+                                    )}
+                                  >
+                                    {field.value ? (
+                                      format(field.value, "PPP")
+                                    ) : (
+                                      <span>Pick a date</span>
+                                    )}
+                                  </Button>
+                                </FormControl>
+                              </PopoverTrigger>
+                              <PopoverContent className="w-auto p-0" align="start">
+                                <Calendar
+                                  mode="single"
+                                  selected={field.value}
+                                  onSelect={field.onChange}
+                                  initialFocus
+                                />
+                              </PopoverContent>
+                            </Popover>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <div className="space-y-2">
+                        <FormLabel>Project Image</FormLabel>
+                        <div className="flex items-center justify-center w-full">
+                          <label
+                            htmlFor="dropzone-file"
+                            className="flex flex-col items-center justify-center w-full h-64 border-2 border-dashed rounded-lg cursor-pointer bg-card hover:bg-card/80"
+                          >
+                            <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                              <ImageIcon className="w-10 h-10 mb-3 text-muted-foreground" />
+                              <p className="mb-2 text-sm text-muted-foreground">
+                                <span className="font-semibold">Click to upload</span> or drag and drop
+                              </p>
+                              <p className="text-xs text-muted-foreground">
+                                SVG, PNG, JPG or GIF (MAX. 800x400px)
+                              </p>
+                            </div>
+                            <input id="dropzone-file" type="file" className="hidden" />
+                          </label>
+                        </div>
+                      </div>
+                    </div>
 
                     <Button
                       type="submit"
