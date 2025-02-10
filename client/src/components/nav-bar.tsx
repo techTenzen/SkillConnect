@@ -11,7 +11,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Home, BookOpen, Users, MessageSquare, LogOut } from "lucide-react";
 
 
-export function NavBar() {
+export default function NavBar() {
   const { user, logout } = useAuth();
 
   const navItems = [
