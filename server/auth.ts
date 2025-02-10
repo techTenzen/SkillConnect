@@ -33,62 +33,8 @@ async function comparePasswords(supplied: string, stored: string) {
 }
 
 export function setupAuth(app: Express) {
-  // OAuth Configuration
-  passport.use(
-    new GoogleStrategy(
-      {
-        clientID: process.env.GOOGLE_CLIENT_ID!,
-        clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
-        callbackURL: "/auth/google/callback",
-      },
-      async (accessToken, refreshToken, profile, done) => {
-        try {
-          let user = await storage.getUserByOAuthId(profile.id);
-          if (!user) {
-            user = await storage.createUser({
-              username: profile.emails![0].value,
-              oauthId: profile.id,
-              avatar: profile.photos?.[0].value,
-              bio: "",
-              skills: {},
-              social: {},
-            });
-          }
-          done(null, user);
-        } catch (error) {
-          done(error as Error);
-        }
-      }
-    )
-  );
-
-  passport.use(
-    new GitHubStrategy(
-      {
-        clientID: process.env.GITHUB_CLIENT_ID!,
-        clientSecret: process.env.GITHUB_CLIENT_SECRET!,
-        callbackURL: "/auth/github/callback",
-      },
-      async (accessToken, refreshToken, profile, done) => {
-        try {
-          let user = await storage.getUserByOAuthId(profile.id);
-          if (!user) {
-            user = await storage.createUser({
-              username: profile.username!,
-              oauthId: profile.id,
-              avatar: profile._json.avatar_url,
-              bio: "",
-              skills: {},
-              social: {},
-            });
-          }
-          done(null, user);
-        } catch (error) {
-          done(error as Error);
-        }
-      }
-    )
-  );
+  // OAuth Configuration temporarily disabled
+  // Add your OAuth credentials in Secrets tool to enable
 
   const sessionSettings: session.SessionOptions = {
     secret: process.env.REPL_ID!,
