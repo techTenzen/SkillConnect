@@ -15,11 +15,37 @@ export default function NavBar() {
   const { user, logoutMutation } = useAuth();
 
   const navItems = [
-    { path: "/", label: "Home", icon: Home },
+    { path: "/dashboard", label: "Home", icon: Home },
     { path: "/projects", label: "Projects", icon: Users },
     { path: "/forum", label: "Forum", icon: BookOpen },
     { path: "/chat", label: "AI Chat", icon: MessageSquare },
   ];
+
+  if (!user) {
+    return (
+      <nav className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+        <div className="container mx-auto px-4">
+          <div className="flex h-14 items-center justify-between">
+            <Link href="/">
+              <a className="font-bold text-xl">
+                VIT-AP SkillConnect
+              </a>
+            </Link>
+            <div className="flex items-center gap-4">
+              <Link href="/auth?mode=login">
+                <Button variant="ghost">Login</Button>
+              </Link>
+              <Link href="/auth?mode=register">
+                <Button className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600">
+                  Sign Up
+                </Button>
+              </Link>
+            </div>
+          </div>
+        </div>
+      </nav>
+    );
+  }
 
   return (
     <nav className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
