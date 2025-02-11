@@ -1,8 +1,6 @@
 import passport from "passport";
-
 import { Strategy as GoogleStrategy } from "passport-google-oauth20";
 import { Strategy as GitHubStrategy } from "passport-github2";
-
 import { Strategy as LocalStrategy } from "passport-local";
 import { Express } from "express";
 import session from "express-session";
@@ -10,6 +8,8 @@ import { scrypt, randomBytes, timingSafeEqual } from "crypto";
 import { promisify } from "util";
 import { storage } from "./storage";
 import { User as SelectUser } from "@shared/schema";
+import { initializeApp } from "firebase/app";
+import { getAuth } from "firebase/auth";
 
 declare global {
   namespace Express {
@@ -31,6 +31,18 @@ async function comparePasswords(supplied: string, stored: string) {
   const suppliedBuf = (await scryptAsync(supplied, salt, 64)) as Buffer;
   return timingSafeEqual(hashedBuf, suppliedBuf);
 }
+
+const firebaseConfig = {
+  apiKey: process.env.FIREBASE_API_KEY!,
+  authDomain: process.env.FIREBASE_AUTH_DOMAIN!,
+  projectId: process.env.FIREBASE_PROJECT_ID!,
+  storageBucket: process.env.FIREBASE_STORAGE_BUCKET!,
+  messagingSenderId: process.env.FIREBASE_MESSAGING_SENDER_ID!,
+  appId: process.env.FIREBASE_APP_ID!,
+};
+
+const appFirebase = initializeApp(firebaseConfig);
+const auth = getAuth(appFirebase);
 
 export function setupAuth(app: Express) {
   // OAuth Configuration temporarily disabled
@@ -68,32 +80,33 @@ export function setupAuth(app: Express) {
     done(null, user);
   });
 
-  app.post("/api/register", async (req, res, next) => {
-    const existingUser = await storage.getUserByUsername(req.body.username);
-    if (existingUser) {
-      return res.status(400).send("Username already exists");
+  app.post("/api/register", async (req, res) => {
+    try {
+      const { user } = await auth.createUserWithEmailAndPassword(
+        req.body.email,
+        req.body.password
+      );
+      res.json({ user });
+    } catch (error) {
+      res.status(400).json({ error: error.message });
     }
-
-    const user = await storage.createUser({
-      ...req.body,
-      password: await hashPassword(req.body.password),
-    });
-
-    req.login(user, (err) => {
-      if (err) return next(err);
-      res.status(201).json(user);
-    });
   });
 
-  app.post("/api/login", passport.authenticate("local"), (req, res) => {
-    res.status(200).json(req.user);
+  app.post("/api/login", async (req, res) => {
+    try {
+      const { user } = await auth.signInWithEmailAndPassword(
+        req.body.email,
+        req.body.password
+      );
+      res.json({ user });
+    } catch (error) {
+      res.status(400).json({ error: error.message });
+    }
   });
 
-  app.post("/api/logout", (req, res, next) => {
-    req.logout((err) => {
-      if (err) return next(err);
-      res.sendStatus(200);
-    });
+  app.post("/api/logout", (req, res) => {
+    auth.signOut();
+    res.sendStatus(200);
   });
 
   app.get("/api/user", (req, res) => {
@@ -101,7 +114,7 @@ export function setupAuth(app: Express) {
     res.json(req.user);
   });
 
-  // Google OAuth routes
+  // Google OAuth routes (remains from original, could be removed)
   app.get(
     "/auth/google",
     passport.authenticate("google", { scope: ["profile", "email"] })
@@ -113,7 +126,7 @@ export function setupAuth(app: Express) {
     (req, res) => res.redirect("/dashboard")
   );
 
-  // GitHub OAuth routes
+  // GitHub OAuth routes (remains from original, could be removed)
   app.get("/auth/github", passport.authenticate("github", { scope: ["user:email"] }));
 
   app.get(
