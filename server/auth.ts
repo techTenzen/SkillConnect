@@ -37,7 +37,7 @@ export function setupAuth(app: Express) {
   // Add your OAuth credentials in Secrets tool to enable
 
   const sessionSettings: session.SessionOptions = {
-    secret: process.env.REPL_ID!,
+    secret: process.env.SESSION_SECRET!,
     resave: false,
     saveUninitialized: false,
     store: storage.sessionStore,
