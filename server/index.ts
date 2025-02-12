@@ -74,6 +74,18 @@ app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
   console.error(err.stack);
   res.status(500).json({ message: isDev ? err.message : 'Internal Server Error' });
 });
+  server.on('error', (error: any) => {
+    if (error.code === 'EADDRINUSE') {
+      const newPort = PORT + 1;
+      log(`Port ${PORT} is in use, trying port ${newPort}`);
+      server.listen(newPort, "0.0.0.0", () => {
+        log(`Server running at http://0.0.0.0:${newPort}`);
+      });
+    } else {
+      throw error;
+    }
+  });
+
   server.listen(PORT, "0.0.0.0", () => {
     log(`Server running at http://0.0.0.0:${PORT}`);
   });
