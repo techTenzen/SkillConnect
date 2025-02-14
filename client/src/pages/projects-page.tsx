@@ -9,18 +9,44 @@ import { useForm } from "react-hook-form";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { z } from "zod";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Card, CardHeader, CardContent, CardTitle, CardDescription } from "@/components/ui/card";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Calendar } from "@/components/ui/calendar";
+import { Textarea } from "@/components/ui/textarea";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Eye, Image as ImageIcon, Loader2, MessageSquare, Plus, SlidersHorizontal, X } from "lucide-react";
 import { format } from "date-fns";
+import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
-import { Loader2, Plus, Search, SlidersHorizontal, Eye, MessageSquare, Image as ImageIcon } from "lucide-react";
 
 export default function ProjectsPage() {
   const { user } = useAuth();
@@ -28,11 +54,10 @@ export default function ProjectsPage() {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [sortBy, setSortBy] = useState("recent");
+  const [date, setDate] = useState<Date>();
 
-  // Query projects with error handling
-  const { data: projects, isLoading, error } = useQuery<Project[]>({
+  const { data: projects, isLoading } = useQuery<Project[]>({
     queryKey: ["/api/projects"],
-    retry: 1,
   });
 
   const form = useForm({
@@ -57,13 +82,9 @@ export default function ProjectsPage() {
     },
   });
 
-  // Create project mutation
   const createMutation = useMutation({
     mutationFn: async (data: z.infer<typeof insertProjectSchema>) => {
       const res = await apiRequest("POST", "/api/projects", data);
-      if (!res.ok) {
-        throw new Error("Failed to create project");
-      }
       return res.json();
     },
     onSuccess: () => {
@@ -71,25 +92,26 @@ export default function ProjectsPage() {
       setOpen(false);
       form.reset();
       toast({
-        title: "Success",
-        description: "Project created successfully",
+        title: "Project created",
+        description: "Your project has been posted successfully.",
       });
     },
     onError: (error: Error) => {
       toast({
-        title: "Error",
+        title: "Creation failed",
         description: error.message,
         variant: "destructive",
       });
     },
   });
 
-  // Animation variants
   const container = {
     hidden: { opacity: 0 },
     show: {
       opacity: 1,
-      transition: { staggerChildren: 0.1 }
+      transition: {
+        staggerChildren: 0.1
+      }
     }
   };
 
@@ -98,45 +120,13 @@ export default function ProjectsPage() {
     show: { opacity: 1, y: 0 }
   };
 
-  // Filter and sort projects
-  const filteredProjects = projects?.filter((project) => {
-    if (!search) return true;
-    const searchLower = search.toLowerCase();
-    return (
-      project.title.toLowerCase().includes(searchLower) ||
-      project.description.toLowerCase().includes(searchLower) ||
-      project.skills?.some(skill => skill.toLowerCase().includes(searchLower)) ||
-      project.rolesSought?.some(role => role.toLowerCase().includes(searchLower))
-    );
-  }).sort((a, b) => {
-    if (sortBy === "recent") {
-      return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
-    }
-    return 0;
-  });
-
-  if (error) {
-    return (
-      <div className="min-h-screen bg-background">
-        <NavBar />
-        <div className="container mx-auto px-4 py-8">
-          <div className="text-center">
-            <h2 className="text-2xl font-bold text-destructive">Error loading projects</h2>
-            <p className="text-muted-foreground">{error.message}</p>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="min-h-screen bg-background">
       <NavBar />
 
       <main className="container mx-auto px-4 py-8">
-        <div className="space-y-6">
-          {/* Header Section */}
-          <div className="flex items-center justify-between">
+        <div className="flex flex-col gap-6">
+          <div className="flex justify-between items-center">
             <h1 className="text-3xl font-bold">Collab Space</h1>
             <Dialog open={open} onOpenChange={setOpen}>
               <DialogTrigger asChild>
@@ -150,61 +140,19 @@ export default function ProjectsPage() {
                   <DialogTitle>About The Project</DialogTitle>
                 </DialogHeader>
                 <Form {...form}>
-                  <form onSubmit={form.handleSubmit((data) => createMutation.mutate(data))} className="space-y-6">
-                    {/* Project Title */}
-                    <FormField
-                      control={form.control}
-                      name="title"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Project Title</FormLabel>
-                          <FormControl>
-                            <Input placeholder="Enter project title" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    {/* Project Description */}
-                    <FormField
-                      control={form.control}
-                      name="description"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Project Details</FormLabel>
-                          <FormControl>
-                            <Input 
-                              placeholder="Describe your project goals and requirements"
-                              {...field} 
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    {/* Skills and Tools */}
-                    <div className="grid grid-cols-2 gap-4">
+                  <form
+                    onSubmit={form.handleSubmit((data) => createMutation.mutate(data))}
+                    className="space-y-6"
+                  >
+                    <div className="space-y-4">
                       <FormField
                         control={form.control}
-                        name="skills"
+                        name="title"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Required Skills</FormLabel>
+                            <FormLabel>Project Title</FormLabel>
                             <FormControl>
-                              <Input
-                                placeholder="e.g. React, Node.js"
-                                value={field.value?.join(", ")}
-                                onChange={(e) =>
-                                  field.onChange(
-                                    e.target.value
-                                      .split(",")
-                                      .map((s) => s.trim())
-                                      .filter(Boolean)
-                                  )
-                                }
-                              />
+                              <Input {...field} />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -213,104 +161,116 @@ export default function ProjectsPage() {
 
                       <FormField
                         control={form.control}
-                        name="tools"
+                        name="description"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Tools</FormLabel>
+                            <FormLabel>Project Details</FormLabel>
                             <FormControl>
-                              <Input
-                                placeholder="e.g. VS Code, Figma"
-                                value={field.value.join(", ")}
-                                onChange={(e) =>
-                                  field.onChange(
-                                    e.target.value
-                                      .split(",")
-                                      .map((s) => s.trim())
-                                      .filter(Boolean)
-                                  )
-                                }
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </div>
-
-                    {/* Roles and Location */}
-                    <div className="grid grid-cols-2 gap-4">
-                      <FormField
-                        control={form.control}
-                        name="rolesSought"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Roles Sought</FormLabel>
-                            <FormControl>
-                              <Input
-                                placeholder="e.g. Frontend Dev, Designer"
-                                value={field.value.join(", ")}
-                                onChange={(e) =>
-                                  field.onChange(
-                                    e.target.value
-                                      .split(",")
-                                      .map((s) => s.trim())
-                                      .filter(Boolean)
-                                  )
-                                }
-                              />
+                              <Textarea {...field} className="min-h-[100px]" />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
                         )}
                       />
 
-                      <FormField
-                        control={form.control}
-                        name="location"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Location</FormLabel>
-                            <FormControl>
-                              <Input placeholder="e.g. Wayne, PA" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </div>
-
-                    {/* Setting and Deadline */}
-                    <div className="grid grid-cols-2 gap-4">
-                      <FormField
-                        control={form.control}
-                        name="setting"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Project Setting</FormLabel>
-                            <Select
-                              onValueChange={field.onChange}
-                              defaultValue={field.value}
-                            >
+                      <div className="grid gap-4 md:grid-cols-2">
+                        <FormField
+                          control={form.control}
+                          name="tools"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Tools</FormLabel>
                               <FormControl>
-                                <SelectTrigger>
-                                  <SelectValue placeholder="Select setting" />
-                                </SelectTrigger>
+                                <Input
+                                  placeholder="e.g., Photoshop, Canva"
+                                  value={field.value.join(", ")}
+                                  onChange={(e) =>
+                                    field.onChange(
+                                      e.target.value
+                                        .split(",")
+                                        .map((s) => s.trim())
+                                        .filter(Boolean)
+                                    )
+                                  }
+                                />
                               </FormControl>
-                              <SelectContent>
-                                <SelectItem value="in-person">In-Person</SelectItem>
-                                <SelectItem value="remote">Remote</SelectItem>
-                              </SelectContent>
-                            </Select>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        <FormField
+                          control={form.control}
+                          name="rolesSought"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Roles Sought</FormLabel>
+                              <FormControl>
+                                <Input
+                                  placeholder="e.g., Designer, Developer"
+                                  value={field.value.join(", ")}
+                                  onChange={(e) =>
+                                    field.onChange(
+                                      e.target.value
+                                        .split(",")
+                                        .map((s) => s.trim())
+                                        .filter(Boolean)
+                                    )
+                                  }
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+
+                      <div className="grid gap-4 md:grid-cols-2">
+                        <FormField
+                          control={form.control}
+                          name="setting"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Setting</FormLabel>
+                              <Select
+                                onValueChange={field.onChange}
+                                defaultValue={field.value}
+                              >
+                                <FormControl>
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Select setting" />
+                                  </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                  <SelectItem value="in-person">In-Person</SelectItem>
+                                  <SelectItem value="remote">Remote</SelectItem>
+                                </SelectContent>
+                              </Select>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        <FormField
+                          control={form.control}
+                          name="location"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Location</FormLabel>
+                              <FormControl>
+                                <Input {...field} placeholder="e.g., Wayne, PA" />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
 
                       <FormField
                         control={form.control}
                         name="deadline"
                         render={({ field }) => (
-                          <FormItem>
+                          <FormItem className="flex flex-col">
                             <FormLabel>Deadline</FormLabel>
                             <Popover>
                               <PopoverTrigger asChild>
@@ -335,9 +295,7 @@ export default function ProjectsPage() {
                                   mode="single"
                                   selected={field.value}
                                   onSelect={field.onChange}
-                                  disabled={(date) =>
-                                    date < new Date()
-                                  }
+                                  initialFocus
                                 />
                               </PopoverContent>
                             </Popover>
@@ -345,6 +303,27 @@ export default function ProjectsPage() {
                           </FormItem>
                         )}
                       />
+
+                      <div className="space-y-2">
+                        <FormLabel>Project Image</FormLabel>
+                        <div className="flex items-center justify-center w-full">
+                          <label
+                            htmlFor="dropzone-file"
+                            className="flex flex-col items-center justify-center w-full h-64 border-2 border-dashed rounded-lg cursor-pointer bg-card hover:bg-card/80"
+                          >
+                            <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                              <ImageIcon className="w-10 h-10 mb-3 text-muted-foreground" />
+                              <p className="mb-2 text-sm text-muted-foreground">
+                                <span className="font-semibold">Click to upload</span> or drag and drop
+                              </p>
+                              <p className="text-xs text-muted-foreground">
+                                SVG, PNG, JPG or GIF (MAX. 800x400px)
+                              </p>
+                            </div>
+                            <input id="dropzone-file" type="file" className="hidden" />
+                          </label>
+                        </div>
+                      </div>
                     </div>
 
                     <Button
@@ -352,14 +331,7 @@ export default function ProjectsPage() {
                       className="w-full"
                       disabled={createMutation.isPending}
                     >
-                      {createMutation.isPending ? (
-                        <>
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          Creating...
-                        </>
-                      ) : (
-                        'Create Project'
-                      )}
+                      {createMutation.isPending ? "Creating..." : "Create Project"}
                     </Button>
                   </form>
                 </Form>
@@ -367,21 +339,17 @@ export default function ProjectsPage() {
             </Dialog>
           </div>
 
-          {/* Search and Filter Section */}
-          <div className="flex flex-col md:flex-row gap-4">
-            <div className="flex-1 flex items-center gap-4">
-              <Button variant="outline" size="icon">
-                <SlidersHorizontal className="h-4 w-4" />
-              </Button>
-              <div className="flex-1 relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input 
-                  placeholder="Search by Major, Skills, Tags"
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  className="pl-10"
-                />
-              </div>
+          <div className="flex items-center gap-4">
+            <Button variant="outline" size="icon" className="shrink-0">
+              <SlidersHorizontal className="h-4 w-4" />
+            </Button>
+            <div className="flex-1">
+              <Input 
+                placeholder="Search by Major, Skills, Tags"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="w-full"
+              />
             </div>
             <Select value={sortBy} onValueChange={setSortBy}>
               <SelectTrigger className="w-[180px]">
@@ -390,14 +358,13 @@ export default function ProjectsPage() {
               <SelectContent>
                 <SelectItem value="recent">Most Recent</SelectItem>
                 <SelectItem value="popular">Most Popular</SelectItem>
-                <SelectItem value="deadline">Deadline</SelectItem>
+                <SelectItem value="comments">Most Comments</SelectItem>
               </SelectContent>
             </Select>
           </div>
 
-          {/* Projects Grid */}
           {isLoading ? (
-            <div className="flex justify-center items-center py-12">
+            <div className="flex justify-center">
               <Loader2 className="h-8 w-8 animate-spin" />
             </div>
           ) : (
@@ -407,7 +374,7 @@ export default function ProjectsPage() {
               animate="show"
               className="grid gap-6 md:grid-cols-2 lg:grid-cols-3"
             >
-              {filteredProjects?.map((project) => (
+              {projects?.map((project) => (
                 <motion.div key={project.id} variants={item}>
                   <Card className="group hover:shadow-lg transition-shadow duration-200">
                     <CardHeader>
@@ -430,8 +397,8 @@ export default function ProjectsPage() {
                         {project.description}
                       </p>
                       <div className="flex flex-wrap gap-2 mb-4">
-                        {project.skills?.map((skill, index) => (
-                          <Badge key={index} variant="secondary" className="bg-purple-500/10">
+                        {project.skills?.map((skill) => (
+                          <Badge key={skill} variant="secondary" className="bg-purple-500/10">
                             {skill}
                           </Badge>
                         ))}

@@ -39,45 +39,37 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getUser(id: number): Promise<User | undefined> {
-    const result = await db.select().from(users).where(eq(users.id, id));
-    return result[0];
+    const [user] = await db.select().from(users).where(eq(users.id, id));
+    return user;
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
-    const result = await db.select().from(users).where(eq(users.username, username));
-    return result[0];
+    const [user] = await db.select().from(users).where(eq(users.username, username));
+    return user;
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
-    const result = await db.insert(users).values({ 
-      ...insertUser,
-      created_at: new Date(),
-      updated_at: new Date()
-    }).returning();
-    return result[0];
+    const [user] = await db.insert(users).values(insertUser).returning();
+    return user;
   }
 
   async updateUser(id: number, updates: Partial<User>): Promise<User | undefined> {
-    const result = await db
+    const [user] = await db
       .update(users)
-      .set({ ...updates, updated_at: new Date() })
+      .set(updates)
       .where(eq(users.id, id))
       .returning();
-    return result[0];
+    return user;
   }
 
   async createProject(project: Omit<Project, "id">): Promise<Project> {
-    const result = await db.insert(projects).values({
-      ...project,
-      created_at: new Date(),
-      updated_at: new Date()
-    }).returning();
-    return result[0];
+    const [newProject] = await db.insert(projects).values(project).returning();
+    return newProject;
   }
 
   async getProject(id: number): Promise<Project | undefined> {
-    const result = await db.select().from(projects).where(eq(projects.id, id));
-    return result[0];
+    const [project] = await db.select().from(projects).where(eq(projects.id, id));
+    return project;
   }
 
   async getAllProjects(): Promise<Project[]> {
@@ -85,17 +77,13 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createDiscussion(discussion: Omit<Discussion, "id">): Promise<Discussion> {
-    const result = await db.insert(discussions).values({
-      ...discussion,
-      created_at: new Date(),
-      updated_at: new Date()
-    }).returning();
-    return result[0];
+    const [newDiscussion] = await db.insert(discussions).values(discussion).returning();
+    return newDiscussion;
   }
 
   async getDiscussion(id: number): Promise<Discussion | undefined> {
-    const result = await db.select().from(discussions).where(eq(discussions.id, id));
-    return result[0];
+    const [discussion] = await db.select().from(discussions).where(eq(discussions.id, id));
+    return discussion;
   }
 
   async getAllDiscussions(): Promise<Discussion[]> {
