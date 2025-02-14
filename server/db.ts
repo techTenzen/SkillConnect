@@ -3,26 +3,52 @@ import { drizzle } from 'drizzle-orm/node-postgres';
 import * as schema from "@shared/schema";
 
 // Check for required environment variables
-if (!process.env.SUPABASE_DB_URL) {
-  throw new Error("SUPABASE_DB_URL environment variable is not set");
+if (!process.env.DATABASE_URL) {
+  throw new Error("DATABASE_URL environment variable is not set");
 }
 
+// Parse the connection string
+const connectionString = process.env.DATABASE_URL;
+
 export const pool = new pg.Pool({
-  connectionString: process.env.SUPABASE_DB_URL,
+  connectionString,
   ssl: {
-    rejectUnauthorized: false // Required for Supabase
+    rejectUnauthorized: false
   },
-  max: 20, // Increase max connections
-  idleTimeoutMillis: 30000, // How long a client is allowed to remain idle before being closed
-  connectionTimeoutMillis: 2000, // How long to wait before timing out when connecting a new client
+  // Configure connection pool settings
+  max: 10,
+  idleTimeoutMillis: 30000,
+  connectionTimeoutMillis: 5000,
+  // Enable debug logging
+  log: (msg: string) => console.log('Pool log:', msg)
 });
 
 export const db = drizzle(pool, { schema });
 
 // Test the connection
-pool.connect()
-  .then(() => console.log('Successfully connected to Supabase database'))
-  .catch((err: Error) => console.error('Error connecting to database:', err.message));
+async function testConnection() {
+  try {
+    const client = await pool.connect();
+    console.log('Successfully connected to database');
+
+    // Test query
+    const result = await client.query('SELECT NOW()');
+    console.log('Database query successful:', result.rows[0]);
+
+    client.release();
+  } catch (err) {
+    console.error('Error connecting to database:', err);
+    console.error('Connection details:', {
+      host: pool.options.host,
+      port: pool.options.port,
+      database: pool.options.database,
+      user: pool.options.user,
+      ssl: pool.options.ssl
+    });
+  }
+}
+
+testConnection();
 
 // Handle pool errors
 pool.on('error', (err) => {
