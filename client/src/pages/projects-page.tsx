@@ -83,10 +83,10 @@ export default function ProjectsPage() {
   });
 
   const createMutation = useMutation({
-    mutationFn: async (data: z.infer<typeof form.formState.resolver.schema>) => {
+    mutationFn: async (data: z.infer<typeof insertProjectSchema>) => {
       const formattedData = {
         ...data,
-        deadline: data.deadline.toISOString(), // Convert Date to string
+        deadline: data.deadline?.toISOString() || new Date().toISOString(),
       };
       const res = await apiRequest("POST", "/api/projects", formattedData);
       return res.json();
