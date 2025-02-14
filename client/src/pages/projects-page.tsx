@@ -83,8 +83,12 @@ export default function ProjectsPage() {
   });
 
   const createMutation = useMutation({
-    mutationFn: async (data: z.infer<typeof insertProjectSchema>) => {
-      const res = await apiRequest("POST", "/api/projects", data);
+    mutationFn: async (data: z.infer<typeof form.formState.resolver.schema>) => {
+      const formattedData = {
+        ...data,
+        deadline: data.deadline.toISOString(), // Convert Date to string
+      };
+      const res = await apiRequest("POST", "/api/projects", formattedData);
       return res.json();
     },
     onSuccess: () => {
@@ -344,7 +348,7 @@ export default function ProjectsPage() {
               <SlidersHorizontal className="h-4 w-4" />
             </Button>
             <div className="flex-1">
-              <Input 
+              <Input
                 placeholder="Search by Major, Skills, Tags"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}

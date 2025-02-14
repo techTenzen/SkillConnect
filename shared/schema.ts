@@ -18,6 +18,11 @@ export const projects = pgTable("projects", {
   description: text("description").notNull(),
   ownerId: integer("owner_id").notNull(),
   skills: jsonb("skills").$type<string[]>(),
+  tools: jsonb("tools").$type<string[]>(),
+  rolesSought: jsonb("roles_sought").$type<string[]>(),
+  setting: text("setting").notNull().default("in-person"),
+  location: text("location"),
+  deadline: text("deadline"),
   members: jsonb("members").$type<number[]>(),
   status: text("status").notNull().default("open"),
 });
@@ -45,6 +50,11 @@ export const insertProjectSchema = createInsertSchema(projects).pick({
   title: true,
   description: true,
   skills: true,
+  tools: true,
+  rolesSought: true,
+  setting: true,
+  location: true,
+  deadline: true,
 });
 
 export const insertDiscussionSchema = createInsertSchema(discussions).pick({
