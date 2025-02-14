@@ -42,11 +42,21 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Eye, Image as ImageIcon, Loader2, MessageSquare, Plus, SlidersHorizontal, X } from "lucide-react";
+import { Eye, Image as ImageIcon, Loader2, MessageSquare, Plus, SlidersHorizontal } from "lucide-react";
 import { format } from "date-fns";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
+
+const extendedProjectSchema = insertProjectSchema.extend({
+  tools: z.array(z.string()),
+  rolesSought: z.array(z.string()),
+  setting: z.enum(["remote", "in-person"]),
+  location: z.string().optional(),
+  deadline: z.date(),
+});
+
+type FormValues = z.infer<typeof extendedProjectSchema>;
 
 export default function ProjectsPage() {
   const { user } = useAuth();
@@ -60,16 +70,8 @@ export default function ProjectsPage() {
     queryKey: ["/api/projects"],
   });
 
-  const form = useForm({
-    resolver: zodResolver(
-      insertProjectSchema.extend({
-        tools: z.array(z.string()),
-        rolesSought: z.array(z.string()),
-        setting: z.enum(["remote", "in-person"]),
-        location: z.string(),
-        deadline: z.date(),
-      })
-    ),
+  const form = useForm<FormValues>({
+    resolver: zodResolver(extendedProjectSchema),
     defaultValues: {
       title: "",
       description: "",
@@ -83,8 +85,13 @@ export default function ProjectsPage() {
   });
 
   const createMutation = useMutation({
-    mutationFn: async (data: z.infer<typeof insertProjectSchema>) => {
-      const res = await apiRequest("POST", "/api/projects", data);
+    mutationFn: async (data: FormValues) => {
+      const projectData = {
+        ...data,
+        deadline: data.deadline.toISOString(), // Convert Date to string for API
+        ownerId: user?.id,
+      };
+      const res = await apiRequest("POST", "/api/projects", projectData);
       return res.json();
     },
     onSuccess: () => {
@@ -152,7 +159,7 @@ export default function ProjectsPage() {
                           <FormItem>
                             <FormLabel>Project Title</FormLabel>
                             <FormControl>
-                              <Input {...field} />
+                              <Input {...field} placeholder="e.g., Mobile App Development" />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -166,7 +173,7 @@ export default function ProjectsPage() {
                           <FormItem>
                             <FormLabel>Project Details</FormLabel>
                             <FormControl>
-                              <Textarea {...field} className="min-h-[100px]" />
+                              <Textarea {...field} className="min-h-[100px]" placeholder="Describe your project..." />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -182,7 +189,7 @@ export default function ProjectsPage() {
                               <FormLabel>Tools</FormLabel>
                               <FormControl>
                                 <Input
-                                  placeholder="e.g., Photoshop, Canva"
+                                  placeholder="e.g., React, Node.js"
                                   value={field.value.join(", ")}
                                   onChange={(e) =>
                                     field.onChange(
@@ -207,7 +214,7 @@ export default function ProjectsPage() {
                               <FormLabel>Roles Sought</FormLabel>
                               <FormControl>
                                 <Input
-                                  placeholder="e.g., Designer, Developer"
+                                  placeholder="e.g., Frontend Developer, Designer"
                                   value={field.value.join(", ")}
                                   onChange={(e) =>
                                     field.onChange(
@@ -258,7 +265,7 @@ export default function ProjectsPage() {
                             <FormItem>
                               <FormLabel>Location</FormLabel>
                               <FormControl>
-                                <Input {...field} placeholder="e.g., Wayne, PA" />
+                                <Input {...field} placeholder="e.g., VIT-AP University" />
                               </FormControl>
                               <FormMessage />
                             </FormItem>

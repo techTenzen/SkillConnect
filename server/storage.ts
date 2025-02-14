@@ -39,55 +39,105 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getUser(id: number): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.id, id));
-    return user;
+    try {
+      const [user] = await db.select().from(users).where(eq(users.id, id));
+      return user;
+    } catch (error) {
+      console.error('Error getting user:', error);
+      return undefined;
+    }
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.username, username));
-    return user;
+    try {
+      const [user] = await db.select().from(users).where(eq(users.username, username));
+      return user;
+    } catch (error) {
+      console.error('Error getting user by username:', error);
+      return undefined;
+    }
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
-    const [user] = await db.insert(users).values(insertUser).returning();
-    return user;
+    try {
+      const [user] = await db.insert(users).values(insertUser).returning();
+      return user;
+    } catch (error) {
+      console.error('Error creating user:', error);
+      throw new Error('Failed to create user');
+    }
   }
 
   async updateUser(id: number, updates: Partial<User>): Promise<User | undefined> {
-    const [user] = await db
-      .update(users)
-      .set(updates)
-      .where(eq(users.id, id))
-      .returning();
-    return user;
+    try {
+      const [user] = await db
+        .update(users)
+        .set(updates)
+        .where(eq(users.id, id))
+        .returning();
+      return user;
+    } catch (error) {
+      console.error('Error updating user:', error);
+      return undefined;
+    }
   }
 
   async createProject(project: Omit<Project, "id">): Promise<Project> {
-    const [newProject] = await db.insert(projects).values(project).returning();
-    return newProject;
+    try {
+      const [newProject] = await db.insert(projects).values(project).returning();
+      return newProject;
+    } catch (error) {
+      console.error('Error creating project:', error);
+      throw new Error('Failed to create project');
+    }
   }
 
   async getProject(id: number): Promise<Project | undefined> {
-    const [project] = await db.select().from(projects).where(eq(projects.id, id));
-    return project;
+    try {
+      const [project] = await db.select().from(projects).where(eq(projects.id, id));
+      return project;
+    } catch (error) {
+      console.error('Error getting project:', error);
+      return undefined;
+    }
   }
 
   async getAllProjects(): Promise<Project[]> {
-    return db.select().from(projects);
+    try {
+      return await db.select().from(projects);
+    } catch (error) {
+      console.error('Error getting all projects:', error);
+      return [];
+    }
   }
 
   async createDiscussion(discussion: Omit<Discussion, "id">): Promise<Discussion> {
-    const [newDiscussion] = await db.insert(discussions).values(discussion).returning();
-    return newDiscussion;
+    try {
+      const [newDiscussion] = await db.insert(discussions).values(discussion).returning();
+      return newDiscussion;
+    } catch (error) {
+      console.error('Error creating discussion:', error);
+      throw new Error('Failed to create discussion');
+    }
   }
 
   async getDiscussion(id: number): Promise<Discussion | undefined> {
-    const [discussion] = await db.select().from(discussions).where(eq(discussions.id, id));
-    return discussion;
+    try {
+      const [discussion] = await db.select().from(discussions).where(eq(discussions.id, id));
+      return discussion;
+    } catch (error) {
+      console.error('Error getting discussion:', error);
+      return undefined;
+    }
   }
 
   async getAllDiscussions(): Promise<Discussion[]> {
-    return db.select().from(discussions);
+    try {
+      return await db.select().from(discussions);
+    } catch (error) {
+      console.error('Error getting all discussions:', error);
+      return [];
+    }
   }
 }
 

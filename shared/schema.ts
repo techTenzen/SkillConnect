@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, boolean, jsonb } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, jsonb } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -8,8 +8,8 @@ export const users = pgTable("users", {
   password: text("password").notNull(),
   bio: text("bio"),
   avatar: text("avatar"),
-  skills: jsonb("skills").$type<Record<string, number>>(),
-  social: jsonb("social").$type<{github?: string, linkedin?: string}>(),
+  skills: jsonb("skills").$type<Record<string, number>>().default({}),
+  social: jsonb("social").$type<{github?: string, linkedin?: string}>().default({}),
 });
 
 export const projects = pgTable("projects", {
@@ -32,26 +32,15 @@ export const discussions = pgTable("discussions", {
   createdAt: text("created_at").notNull(),
 });
 
-export const insertUserSchema = createInsertSchema(users).pick({
-  username: true,
-  password: true,
-  bio: true,
-  avatar: true,
-  skills: true,
-  social: true,
+export const insertUserSchema = createInsertSchema(users);
+export const insertProjectSchema = createInsertSchema(projects, {
+  title: z.string().min(1, "Title is required"),
+  description: z.string().min(1, "Description is required"),
+  ownerId: z.number(),
+  skills: z.array(z.string()),
+  status: z.string().optional(),
 });
-
-export const insertProjectSchema = createInsertSchema(projects).pick({
-  title: true,
-  description: true,
-  skills: true,
-});
-
-export const insertDiscussionSchema = createInsertSchema(discussions).pick({
-  title: true,
-  content: true,
-  category: true,
-});
+export const insertDiscussionSchema = createInsertSchema(discussions);
 
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
