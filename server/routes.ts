@@ -20,13 +20,8 @@ export function registerRoutes(app: Express): Server {
 
   // Project routes
   app.get("/api/projects", async (req, res) => {
-    try {
-      const projects = await storage.getAllProjects();
-      res.json(projects);
-    } catch (error) {
-      console.error("Error fetching projects:", error);
-      res.status(500).json({ message: "Failed to fetch projects" });
-    }
+    const projects = await storage.getAllProjects();
+    res.json(projects);
   });
 
   app.post("/api/projects", async (req, res) => {

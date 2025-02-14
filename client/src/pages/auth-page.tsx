@@ -25,11 +25,9 @@ import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Github, Mail } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
-import { GoogleAuthProvider } from "firebase/auth"; // Import necessary Firebase module
-
 
 export default function AuthPage() {
-  const { user, loginMutation, registerMutation, auth } = useAuth(); // Assuming useAuth now provides auth object
+  const { user, loginMutation, registerMutation } = useAuth();
   const [, setLocation] = useLocation();
 
   useEffect(() => {
@@ -82,19 +80,11 @@ export default function AuthPage() {
                 </CardHeader>
                 <CardContent>
                   <div className="grid gap-4">
-                    <Button
-                      variant="outline"
-                      className="gap-2"
-                      onClick={() => window.location.href = '/auth/github'}
-                    >
+                    <Button variant="outline" className="gap-2">
                       <Github className="h-4 w-4" />
                       Continue with GitHub
                     </Button>
-                    <Button
-                      variant="outline"
-                      className="gap-2"
-                      onClick={() => auth.signInWithPopup(new GoogleAuthProvider())} // Updated Google Sign-In
-                    >
+                    <Button variant="outline" className="gap-2">
                       <Mail className="h-4 w-4" />
                       Continue with Google
                     </Button>

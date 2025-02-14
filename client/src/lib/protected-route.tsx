@@ -24,10 +24,10 @@ export function ProtectedRoute({
   if (!user) {
     return (
       <Route path={path}>
-        <Redirect to="/auth" /> {/*This redirect should ideally be more robust, including state to indicate desired action after login*/}
+        <Redirect to="/auth" />
       </Route>
     );
   }
 
-  return <Component />;
+  return <Component />
 }

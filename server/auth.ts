@@ -30,7 +30,7 @@ async function comparePasswords(supplied: string, stored: string) {
 
 export function setupAuth(app: Express) {
   const sessionSettings: session.SessionOptions = {
-    secret: process.env.SESSION_SECRET || 'dev-secret-123',
+    secret: process.env.REPL_ID!,
     resave: false,
     saveUninitialized: false,
     store: storage.sessionStore,
@@ -61,26 +61,30 @@ export function setupAuth(app: Express) {
     done(null, user);
   });
 
-  app.post("/api/register", async (req, res) => {
-    try {
-      const hashedPassword = await hashPassword(req.body.password);
-      const user = await storage.createUser({
-        username: req.body.username,
-        password: hashedPassword,
-        email: req.body.email
-      });
-      res.json({ user });
-    } catch (error) {
-      res.status(400).json({ error: error.message });
+  app.post("/api/register", async (req, res, next) => {
+    const existingUser = await storage.getUserByUsername(req.body.username);
+    if (existingUser) {
+      return res.status(400).send("Username already exists");
     }
+
+    const user = await storage.createUser({
+      ...req.body,
+      password: await hashPassword(req.body.password),
+    });
+
+    req.login(user, (err) => {
+      if (err) return next(err);
+      res.status(201).json(user);
+    });
   });
 
-  app.post("/api/login", passport.authenticate('local'), (req, res) => {
-    res.json({ user: req.user });
+  app.post("/api/login", passport.authenticate("local"), (req, res) => {
+    res.status(200).json(req.user);
   });
 
-  app.post("/api/logout", (req, res) => {
-    req.logout(() => {
+  app.post("/api/logout", (req, res, next) => {
+    req.logout((err) => {
+      if (err) return next(err);
       res.sendStatus(200);
     });
   });
