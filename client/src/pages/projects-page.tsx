@@ -52,6 +52,7 @@ import { cn } from "@/lib/utils";
 export default function ProjectsPage() {
   const { user } = useAuth();
   const { toast } = useToast();
+  const [, navigate] = useLocation();
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [sortBy, setSortBy] = useState("recent");
@@ -84,10 +85,14 @@ export default function ProjectsPage() {
   });
 
   const createMutation = useMutation({
-    mutationFn: async (data: z.infer<typeof insertProjectSchema>) => {
+    mutationFn: async (data: z.infer<typeof form.resolver.schema>) => {
       const formattedData = {
         ...data,
-        deadline: data.deadline?.toISOString() || new Date().toISOString(),
+        deadline: data.deadline instanceof Date 
+          ? data.deadline.toISOString() 
+          : typeof data.deadline === 'string' 
+            ? data.deadline 
+            : new Date().toISOString(),
       };
       const res = await apiRequest("POST", "/api/projects", formattedData);
       return res.json();
@@ -381,18 +386,28 @@ export default function ProjectsPage() {
             >
               {projects?.map((project) => (
                 <motion.div key={project.id} variants={item}>
-                  <Card className="group hover:shadow-lg transition-shadow duration-200">
+                  <Card 
+                    className="group hover:shadow-lg transition-shadow duration-200 cursor-pointer"
+                    onClick={() => navigate(`/projects/${project.id}`)}
+                  >
                     <CardHeader>
                       <div className="flex justify-between items-start">
                         <div>
-                          <CardTitle className="text-xl hover:text-primary cursor-pointer">
+                          <CardTitle className="text-xl hover:text-primary">
                             {project.title}
                           </CardTitle>
                           <CardDescription className="text-sm">
                             Posted by {project.ownerId === user?.id ? "you" : "another user"}
                           </CardDescription>
                         </div>
-                        <Button variant="ghost" size="icon">
+                        <Button 
+                          variant="ghost" 
+                          size="icon"
+                          onClick={(e) => {
+                            e.stopPropagation(); // Prevent card click when button is clicked
+                            // Additional button action can be added here
+                          }}
+                        >
                           <Plus className="h-4 w-4" />
                         </Button>
                       </div>
