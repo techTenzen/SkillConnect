@@ -44,10 +44,13 @@ export default function DiscussionDetailPage({ params }: { params: { id: string 
     enabled: !!discussionId,
   });
 
+  const [replyingTo, setReplyingTo] = useState<Reply | null>(null);
+  
   const form = useForm({
     resolver: zodResolver(insertReplySchema),
     defaultValues: {
       content: "",
+      parentReplyId: null,
     },
   });
 
@@ -198,13 +201,30 @@ export default function DiscussionDetailPage({ params }: { params: { id: string 
                           )}
                         />
 
-                        <Button
-                          type="submit"
-                          disabled={replyMutation.isPending}
-                          className="w-full"
-                        >
-                          {replyMutation.isPending ? "Posting..." : "Post Reply"}
-                        </Button>
+                        <div className="flex justify-between items-center">
+                          {replyingTo && (
+                            <div className="flex items-center text-sm text-muted-foreground">
+                              <span>Replying to {replyingTo.authorId === user?.id ? "your comment" : `User ${replyingTo.authorId}`}</span>
+                              <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                onClick={() => {
+                                  setReplyingTo(null);
+                                  form.setValue("parentReplyId", null);
+                                }}
+                              >
+                                <X className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          )}
+                          <Button
+                            type="submit"
+                            disabled={replyMutation.isPending}
+                            className={replyingTo ? "w-auto" : "w-full"}
+                          >
+                            {replyMutation.isPending ? "Posting..." : "Post Reply"}
+                          </Button>
+                        </div>
                       </form>
                     </Form>
                   </CardContent>

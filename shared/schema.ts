@@ -48,6 +48,7 @@ export const replies = pgTable("replies", {
   upvotes: integer("upvotes").notNull().default(0),
   upvotedBy: jsonb("upvoted_by").$type<number[]>(),
   createdAt: text("created_at").notNull(),
+  parentReplyId: integer("parent_reply_id"), // For nested replies
 });
 
 export const insertUserSchema = createInsertSchema(users).pick({
@@ -79,6 +80,7 @@ export const insertDiscussionSchema = createInsertSchema(discussions).pick({
 
 export const insertReplySchema = createInsertSchema(replies).pick({
   content: true,
+  parentReplyId: true,
 });
 
 export type InsertUser = z.infer<typeof insertUserSchema>;

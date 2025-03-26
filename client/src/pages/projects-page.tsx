@@ -63,13 +63,8 @@ export default function ProjectsPage() {
   });
   
   // Filter projects based on whether they have enough members
-  const projects = allProjects?.filter(project => {
-    const memberCount = project.members?.length || 0;
-    const membersNeeded = project.membersNeeded || 1;
-    
-    // Only show projects that still need members
-    return memberCount < membersNeeded;
-  });
+  // NOTE: Disabling filter temporarily to show all projects
+  const projects = allProjects;
 
   const form = useForm({
     resolver: zodResolver(
