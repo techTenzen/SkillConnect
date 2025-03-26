@@ -10,6 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Loader2, UserPlus2, Send, X, Check } from "lucide-react";
 import { User, Invitation } from "@shared/schema";
+import NavBar from "@/components/nav-bar";
 
 interface UserCardProps {
   user: Omit<User, "password">;
@@ -268,8 +269,10 @@ export default function NetworkingPage() {
   if (!user) return null;
   
   return (
-    <div className="container py-8">
-      <h1 className="text-3xl font-bold mb-8">Networking</h1>
+    <>
+      <NavBar />
+      <div className="container py-8">
+        <h1 className="text-3xl font-bold mb-8">Networking</h1>
       
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="grid w-full grid-cols-2 mb-8">
@@ -335,5 +338,6 @@ export default function NetworkingPage() {
         </TabsContent>
       </Tabs>
     </div>
+    </>
   );
 }
