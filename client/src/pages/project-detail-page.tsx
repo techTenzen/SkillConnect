@@ -4,7 +4,7 @@ import { useAuth } from "@/hooks/use-auth";
 import NavBar from "@/components/nav-bar";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { Project } from "@shared/schema";
+import { Project, User } from "@shared/schema";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { 
@@ -35,6 +35,10 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
       if (!res.ok) throw new Error("Failed to fetch project");
       return res.json();
     },
+  });
+  
+  const { data: allUsers } = useQuery<User[]>({
+    queryKey: ["/api/users"],
   });
 
   const sendRequestMutation = useMutation({
@@ -150,7 +154,9 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
                         {project.title}
                       </CardTitle>
                       <CardDescription>
-                        Posted by {isOwner ? "you" : "another user"}
+                        Posted by {isOwner 
+                          ? "you" 
+                          : (allUsers?.find((u: User) => u.id === project.ownerId)?.username || "unknown user")}
                       </CardDescription>
                     </div>
                     {!isOwner && (
@@ -266,7 +272,7 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
                             <Avatar className="h-8 w-8 mr-2">
                               <AvatarFallback>U</AvatarFallback>
                             </Avatar>
-                            <span>User #{requesterId}</span>
+                            <span>{allUsers?.find((u: User) => u.id === requesterId)?.username || `User #${requesterId}`}</span>
                           </div>
                           <div className="flex gap-2">
                             <Button 

@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import NavBar from "@/components/nav-bar";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { Project, insertProjectSchema } from "@shared/schema";
+import { Project, insertProjectSchema, User } from "@shared/schema";
 import { motion } from "framer-motion";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
