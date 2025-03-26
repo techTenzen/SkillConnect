@@ -12,6 +12,9 @@ async function addSampleProjects() {
       console.error("No users found. Please run add-sample-users.ts first.");
       process.exit(1);
     }
+    
+    console.log(`Found ${allUsers.length} users to use as project owners`);
+    console.log("User IDs:", allUsers.map(user => user.id));
 
     const sampleProjects = [
       {
@@ -205,9 +208,12 @@ async function addSampleProjects() {
 }
 
 // Helper function to get a random user ID from the allUsers array
-function getRandomUserId(allUsers: { id: number }[], excludeIds: number[] = []) {
+function getRandomUserId(allUsers: { id: number }[], excludeIds: number[] = []): number {
   const availableUsers = allUsers.filter(user => !excludeIds.includes(user.id));
-  if (availableUsers.length === 0) return null;
+  if (availableUsers.length === 0) {
+    // Default to the first user if no available users
+    return allUsers[0].id;
+  }
   
   const randomIndex = Math.floor(Math.random() * availableUsers.length);
   return availableUsers[randomIndex].id;
