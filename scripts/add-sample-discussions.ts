@@ -100,9 +100,19 @@ async function addSampleDiscussions() {
         .where(sql`${discussions.title} = ${discussion.title}`);
       
       if (existingDiscussions.length === 0) {
-        const [newDiscussion] = await db.insert(discussions).values(discussion).returning({ id: discussions.id });
-        console.log(`Added discussion: ${discussion.title}`);
-        createdDiscussionIds.push({ id: newDiscussion.id, title: discussion.title });
+        // Use SQL to insert directly
+        const result = await db.execute(
+          sql`INSERT INTO discussions 
+              (title, content, author_id, tags, upvoted_by, created_at)
+              VALUES 
+              (${discussion.title}, ${discussion.content}, ${discussion.author_id}, ${JSON.stringify(discussion.tags)}, 
+               ${JSON.stringify(discussion.upvoted_by)}, ${discussion.created_at.toISOString()})
+              RETURNING id`
+        );
+        
+        const newId = result.rows[0].id;
+        console.log(`Added discussion: ${discussion.title} with ID ${newId}`);
+        createdDiscussionIds.push({ id: newId, title: discussion.title });
       } else {
         console.log(`Discussion "${discussion.title}" already exists. Skipping.`);
         createdDiscussionIds.push({ id: existingDiscussions[0].id, title: discussion.title });
@@ -210,7 +220,13 @@ async function addSampleDiscussions() {
         .where(sql`${replies.content} = ${reply.content}`);
       
       if (existingReplies.length === 0) {
-        await db.insert(replies).values(reply);
+        // Use SQL to insert directly
+        await db.execute(
+          sql`INSERT INTO replies 
+              (discussion_id, content, author_id, upvoted_by, created_at)
+              VALUES 
+              (${reply.discussion_id}, ${reply.content}, ${reply.author_id}, ${JSON.stringify(reply.upvoted_by)}, ${reply.created_at.toISOString()})`
+        );
         console.log(`Added reply to discussion ID ${reply.discussion_id}`);
       } else {
         console.log(`Reply already exists. Skipping.`);
@@ -226,9 +242,12 @@ async function addSampleDiscussions() {
 }
 
 // Helper function to get a random user ID from the allUsers array
-function getRandomUserId(allUsers: { id: number }[], excludeIds: number[] = []) {
+function getRandomUserId(allUsers: { id: number }[], excludeIds: number[] = []): number {
   const availableUsers = allUsers.filter(user => !excludeIds.includes(user.id));
-  if (availableUsers.length === 0) return null;
+  if (availableUsers.length === 0) {
+    // Default to the first user if no available users
+    return allUsers[0].id;
+  }
   
   const randomIndex = Math.floor(Math.random() * availableUsers.length);
   return availableUsers[randomIndex].id;

@@ -192,7 +192,16 @@ async function addSampleProjects() {
         .where(sql`${projects.title} = ${project.title}`);
       
       if (existingProjects.length === 0) {
-        await db.insert(projects).values(project);
+        // Use SQL directly to insert the project
+        await db.execute(
+          sql`INSERT INTO projects 
+              (title, description, skills, tools, roles_sought, setting, location, deadline, members_needed, status, owner_id, members, join_requests)
+              VALUES 
+              (${project.title}, ${project.description}, ${JSON.stringify(project.skills)}, ${JSON.stringify(project.tools)}, 
+               ${JSON.stringify(project.roles_sought)}, ${project.setting}, ${project.location}, ${project.deadline.toISOString()}, 
+               ${project.members_needed}, ${project.status}, ${project.owner_id}, ${JSON.stringify(project.members)}, ${JSON.stringify(project.join_requests)})
+             `
+        );
         console.log(`Added project: ${project.title}`);
       } else {
         console.log(`Project "${project.title}" already exists. Skipping.`);
