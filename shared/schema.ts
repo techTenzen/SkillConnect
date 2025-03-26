@@ -26,6 +26,7 @@ export const projects = pgTable("projects", {
   members: jsonb("members").$type<number[]>(),
   joinRequests: jsonb("join_requests").$type<number[]>(),
   status: text("status").notNull().default("open"),
+  membersNeeded: integer("members_needed").default(1),
 });
 
 export const discussions = pgTable("discussions", {
@@ -56,6 +57,7 @@ export const insertProjectSchema = createInsertSchema(projects).pick({
   setting: true,
   location: true,
   deadline: true,
+  membersNeeded: true,
 });
 
 export const insertDiscussionSchema = createInsertSchema(discussions).pick({

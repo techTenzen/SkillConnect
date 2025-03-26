@@ -58,8 +58,17 @@ export default function ProjectsPage() {
   const [sortBy, setSortBy] = useState("recent");
   const [date, setDate] = useState<Date>();
 
-  const { data: projects, isLoading } = useQuery<Project[]>({
+  const { data: allProjects, isLoading } = useQuery<Project[]>({
     queryKey: ["/api/projects"],
+  });
+  
+  // Filter projects based on whether they have enough members
+  const projects = allProjects?.filter(project => {
+    const memberCount = project.members?.length || 0;
+    const membersNeeded = project.membersNeeded || 1;
+    
+    // Only show projects that still need members
+    return memberCount < membersNeeded;
   });
 
   const form = useForm({
@@ -70,6 +79,7 @@ export default function ProjectsPage() {
         setting: z.enum(["remote", "in-person"]),
         location: z.string(),
         deadline: z.date(),
+        membersNeeded: z.number().min(1),
       })
     ),
     defaultValues: {
@@ -81,11 +91,12 @@ export default function ProjectsPage() {
       setting: "in-person",
       location: "",
       deadline: new Date(),
+      membersNeeded: 1,
     },
   });
 
   const createMutation = useMutation({
-    mutationFn: async (data: z.infer<typeof form.resolver.schema>) => {
+    mutationFn: async (data: z.infer<typeof insertProjectSchema>) => {
       const formattedData = {
         ...data,
         deadline: data.deadline instanceof Date 
@@ -235,7 +246,7 @@ export default function ProjectsPage() {
                         />
                       </div>
 
-                      <div className="grid gap-4 md:grid-cols-2">
+                      <div className="grid gap-4 md:grid-cols-3">
                         <FormField
                           control={form.control}
                           name="setting"
@@ -269,6 +280,25 @@ export default function ProjectsPage() {
                               <FormLabel>Location</FormLabel>
                               <FormControl>
                                 <Input {...field} placeholder="e.g., Wayne, PA" />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        
+                        <FormField
+                          control={form.control}
+                          name="membersNeeded"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Team Members Needed</FormLabel>
+                              <FormControl>
+                                <Input 
+                                  type="number" 
+                                  min="1"
+                                  onChange={(e) => field.onChange(parseInt(e.target.value))}
+                                  value={field.value}
+                                />
                               </FormControl>
                               <FormMessage />
                             </FormItem>
