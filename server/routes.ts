@@ -3,7 +3,7 @@ import { createServer, type Server } from "http";
 import { setupAuth } from "./auth";
 import { storage } from "./storage";
 import { insertProjectSchema, insertDiscussionSchema, insertReplySchema, insertInvitationSchema } from "@shared/schema";
-import { getAIResponse } from "./ai";
+import { getAIResponse, getSkillSuggestions } from "./openai";
 
 export function registerRoutes(app: Express): Server {
   setupAuth(app);
