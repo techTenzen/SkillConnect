@@ -11,6 +11,7 @@ import AuthPage from "@/pages/auth-page";
 import NotFound from "@/pages/not-found";
 import ProfilePage from "@/pages/profile-page";
 import ProjectsPage from "@/pages/projects-page";
+import ProjectDetailPage from "@/pages/project-detail-page";
 import ForumPage from "@/pages/forum-page";
 import ChatPage from "@/pages/chat-page";
 
@@ -21,6 +22,7 @@ function Router() {
       <ProtectedRoute path="/dashboard" component={HomePage} />
       <ProtectedRoute path="/profile" component={ProfilePage} />
       <ProtectedRoute path="/projects" component={ProjectsPage} />
+      <ProtectedRoute path="/projects/:id" component={({ params }) => <ProjectDetailPage params={params} />} />
       <ProtectedRoute path="/forum" component={ForumPage} />
       <ProtectedRoute path="/chat" component={ChatPage} />
       <Route path="/auth" component={AuthPage} />
