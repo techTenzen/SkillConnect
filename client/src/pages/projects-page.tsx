@@ -91,14 +91,15 @@ export default function ProjectsPage() {
   });
 
   const createMutation = useMutation({
-    mutationFn: async (data: z.infer<typeof insertProjectSchema>) => {
+    mutationFn: async (data: any) => {
+      // Ensure deadline is a string before sending to API
       const formattedData = {
         ...data,
         deadline: data.deadline instanceof Date 
-          ? data.deadline.toISOString() 
+          ? data.deadline.toISOString().split('T')[0] // Format as YYYY-MM-DD
           : typeof data.deadline === 'string' 
             ? data.deadline 
-            : new Date().toISOString(),
+            : new Date().toISOString().split('T')[0],
       };
       const res = await apiRequest("POST", "/api/projects", formattedData);
       return res.json();
@@ -157,7 +158,16 @@ export default function ProjectsPage() {
                 </DialogHeader>
                 <Form {...form}>
                   <form
-                    onSubmit={form.handleSubmit((data) => createMutation.mutate(data))}
+                    onSubmit={form.handleSubmit((data) => {
+                      // Ensure all arrays are properly formatted
+                      const formattedData = {
+                        ...data,
+                        skills: Array.isArray(data.skills) ? data.skills : [],
+                        tools: Array.isArray(data.tools) ? data.tools : [],
+                        rolesSought: Array.isArray(data.rolesSought) ? data.rolesSought : []
+                      };
+                      createMutation.mutate(formattedData);
+                    })}
                     className="space-y-6"
                   >
                     <div className="space-y-4">
@@ -189,7 +199,32 @@ export default function ProjectsPage() {
                         )}
                       />
 
-                      <div className="grid gap-4 md:grid-cols-2">
+                      <div className="grid gap-4 md:grid-cols-3">
+                        <FormField
+                          control={form.control}
+                          name="skills"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Skills Required</FormLabel>
+                              <FormControl>
+                                <Input
+                                  placeholder="e.g., Python, JavaScript"
+                                  value={field.value.join(", ")}
+                                  onChange={(e) =>
+                                    field.onChange(
+                                      e.target.value
+                                        .split(",")
+                                        .map((s) => s.trim())
+                                        .filter(Boolean)
+                                    )
+                                  }
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      
                         <FormField
                           control={form.control}
                           name="tools"
