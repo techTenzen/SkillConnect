@@ -15,6 +15,7 @@ import ProjectDetailPage from "@/pages/project-detail-page";
 import ForumPage from "@/pages/forum-page";
 import ChatPage from "@/pages/chat-page";
 import DiscussionDetailPage from "@/pages/discussion-detail-page";
+import NetworkingPage from "@/pages/networking-page";
 
 function Router() {
   return (
@@ -35,6 +36,7 @@ function Router() {
         )}
       </Route>
       <ProtectedRoute path="/chat" component={ChatPage} />
+      <ProtectedRoute path="/networking" component={NetworkingPage} />
       <Route path="/auth" component={AuthPage} />
       <Route component={NotFound} />
     </Switch>

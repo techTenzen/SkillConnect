@@ -130,15 +130,21 @@ export default function NetworkingPage() {
   const [activeTab, setActiveTab] = useState("people");
   
   // Fetch all users
-  const { data: users = [], isLoading: isLoadingUsers } = useQuery({
+  const { data: users = [], isLoading: isLoadingUsers } = useQuery<Omit<User, "password">[]>({
     queryKey: ["/api/users"],
-    queryFn: ({ signal }) => apiRequest("GET", "/api/users", undefined, { signal }),
+    queryFn: async ({ signal }) => {
+      const response = await apiRequest("GET", "/api/users", undefined, { signal });
+      return response;
+    },
   });
   
   // Fetch user's invitations
-  const { data: invitations = [], isLoading: isLoadingInvitations } = useQuery({
+  const { data: invitations = [], isLoading: isLoadingInvitations } = useQuery<Invitation[]>({
     queryKey: ["/api/invitations"],
-    queryFn: ({ signal }) => apiRequest("GET", "/api/invitations", undefined, { signal }),
+    queryFn: async ({ signal }) => {
+      const response = await apiRequest("GET", "/api/invitations", undefined, { signal });
+      return response;
+    },
   });
   
   // Create invitation mutation
