@@ -188,6 +188,39 @@ export function registerRoutes(app: Express): Server {
     res.json(sanitizedUsers);
   });
   
+  // Get user by ID
+  app.get("/api/users/:id", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    
+    const userId = parseInt(req.params.id);
+    const user = await storage.getUser(userId);
+    
+    if (!user) return res.sendStatus(404);
+    
+    // Don't send password to the client
+    const { password, ...sanitizedUser } = user;
+    
+    // Check if current user has sent a connection request to this user
+    const sentInvitations = await storage.getInvitationsByUser(req.user.id);
+    const hasSentRequest = sentInvitations.some(
+      invitation => invitation.recipientId === userId && invitation.status === "pending"
+    );
+    
+    // Check if users are already connected (both have accepted invitations)
+    const receivedInvitations = await storage.getInvitationsByUser(userId);
+    const isConnected = sentInvitations.some(
+      invitation => invitation.recipientId === userId && invitation.status === "accepted"
+    ) || receivedInvitations.some(
+      invitation => invitation.senderId === userId && invitation.status === "accepted"
+    );
+    
+    res.json({
+      ...sanitizedUser,
+      hasSentRequest,
+      isConnected
+    });
+  });
+  
   app.get("/api/invitations", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     
@@ -200,6 +233,17 @@ export function registerRoutes(app: Express): Server {
     
     try {
       const validated = insertInvitationSchema.parse(req.body);
+      
+      // Check if they're already connected or have a pending request
+      const sentInvitations = await storage.getInvitationsByUser(req.user.id);
+      const alreadySent = sentInvitations.some(
+        invitation => invitation.recipientId === validated.recipientId && 
+                      (invitation.status === "pending" || invitation.status === "accepted")
+      );
+      
+      if (alreadySent) {
+        return res.status(400).json({ message: "Connection request already sent or users already connected" });
+      }
       
       // Add the sender ID and set status and created date
       const invitation = await storage.createInvitation({

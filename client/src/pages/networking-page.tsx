@@ -27,8 +27,12 @@ function UserCard({ user, onConnect, isConnecting }: UserCardProps) {
   const initials = user.username.substring(0, 2).toUpperCase();
   
   return (
-    <Card className="w-full max-w-[300px]">
-      <CardContent className="pt-6 flex flex-col items-center">
+    <Card className="w-full max-w-[300px] hover:shadow-md transition-shadow">
+      <CardContent className="pt-6 flex flex-col items-center cursor-pointer" 
+        onClick={() => {
+          window.location.href = `/users/${user.id}`;
+        }}
+      >
         <Avatar className="h-16 w-16 mb-2">
           <AvatarImage src={user.avatar || ""} alt={user.username} />
           <AvatarFallback>{initials}</AvatarFallback>
@@ -53,7 +57,10 @@ function UserCard({ user, onConnect, isConnecting }: UserCardProps) {
       </CardContent>
       <CardFooter className="flex justify-center pb-4">
         <Button 
-          onClick={() => onConnect(user.id)} 
+          onClick={(e) => {
+            e.stopPropagation(); // Prevent navigating to profile
+            onConnect(user.id);
+          }} 
           disabled={isConnecting}
           className="w-full"
         >
@@ -81,31 +88,45 @@ function InvitationCard({ invitation, user, onAccept, onDecline, isResponding }:
   // Get user initials for avatar fallback
   const initials = user ? user.username.substring(0, 2).toUpperCase() : "??";
   
+  const handleViewProfile = () => {
+    if (user) {
+      window.location.href = `/users/${invitation.senderId}`;
+    }
+  };
+  
   return (
-    <Card className="w-full">
+    <Card className="w-full hover:shadow-md transition-shadow">
       <CardContent className="pt-6 flex items-center">
-        <Avatar className="h-12 w-12 mr-4">
-          <AvatarImage src={user?.avatar || ""} alt={user?.username} />
-          <AvatarFallback>{initials}</AvatarFallback>
-        </Avatar>
-        <div className="flex-1">
-          <h3 className="font-medium">
-            {user ? user.username : `User #${invitation.senderId}`}
-          </h3>
-          {invitation.projectId && (
-            <p className="text-sm text-muted-foreground">
-              Invited you to join their project
-            </p>
-          )}
-          {invitation.message && (
-            <p className="text-sm mt-1">"{invitation.message}"</p>
-          )}
+        <div 
+          className="flex items-center flex-1 cursor-pointer" 
+          onClick={handleViewProfile}
+        >
+          <Avatar className="h-12 w-12 mr-4">
+            <AvatarImage src={user?.avatar || ""} alt={user?.username} />
+            <AvatarFallback>{initials}</AvatarFallback>
+          </Avatar>
+          <div>
+            <h3 className="font-medium">
+              {user ? user.username : `User #${invitation.senderId}`}
+            </h3>
+            {invitation.projectId && (
+              <p className="text-sm text-muted-foreground">
+                Invited you to join their project
+              </p>
+            )}
+            {invitation.message && (
+              <p className="text-sm mt-1">"{invitation.message}"</p>
+            )}
+          </div>
         </div>
         <div className="flex gap-2">
           <Button 
             size="sm" 
             variant="destructive" 
-            onClick={() => onDecline(invitation.id)} 
+            onClick={(e) => {
+              e.stopPropagation();
+              onDecline(invitation.id);
+            }} 
             disabled={isResponding}
           >
             <X className="h-4 w-4" />
@@ -113,7 +134,10 @@ function InvitationCard({ invitation, user, onAccept, onDecline, isResponding }:
           <Button 
             size="sm" 
             variant="default" 
-            onClick={() => onAccept(invitation.id)} 
+            onClick={(e) => {
+              e.stopPropagation();
+              onAccept(invitation.id);
+            }} 
             disabled={isResponding}
           >
             <Check className="h-4 w-4" />
