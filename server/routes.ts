@@ -2,7 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { setupAuth } from "./auth";
 import { storage } from "./storage";
-import { insertProjectSchema, insertDiscussionSchema } from "@shared/schema";
+import { insertProjectSchema, insertDiscussionSchema, insertReplySchema } from "@shared/schema";
 import { getAIResponse } from "./ai";
 
 export function registerRoutes(app: Express): Server {

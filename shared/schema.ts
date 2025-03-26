@@ -37,6 +37,17 @@ export const discussions = pgTable("discussions", {
   category: text("category").notNull(),
   upvotes: integer("upvotes").notNull().default(0),
   createdAt: text("created_at").notNull(),
+  upvotedBy: jsonb("upvoted_by").$type<number[]>(),
+});
+
+export const replies = pgTable("replies", {
+  id: serial("id").primaryKey(),
+  discussionId: integer("discussion_id").notNull(),
+  authorId: integer("author_id").notNull(),
+  content: text("content").notNull(),
+  upvotes: integer("upvotes").notNull().default(0),
+  upvotedBy: jsonb("upvoted_by").$type<number[]>(),
+  createdAt: text("created_at").notNull(),
 });
 
 export const insertUserSchema = createInsertSchema(users).pick({
@@ -66,7 +77,14 @@ export const insertDiscussionSchema = createInsertSchema(discussions).pick({
   category: true,
 });
 
+export const insertReplySchema = createInsertSchema(replies).pick({
+  discussionId: true,
+  content: true,
+});
+
 export type InsertUser = z.infer<typeof insertUserSchema>;
+export type InsertReply = z.infer<typeof insertReplySchema>;
 export type User = typeof users.$inferSelect;
 export type Project = typeof projects.$inferSelect;
 export type Discussion = typeof discussions.$inferSelect;
+export type Reply = typeof replies.$inferSelect;

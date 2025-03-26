@@ -1,5 +1,8 @@
-import { InsertUser, User, Project, Discussion } from "@shared/schema";
-import { users, projects, discussions } from "@shared/schema";
+import { 
+  InsertUser, User, Project, Discussion, 
+  Reply, InsertReply
+} from "@shared/schema";
+import { users, projects, discussions, replies } from "@shared/schema";
 import { db } from "./db";
 import { eq } from "drizzle-orm";
 import session from "express-session";
@@ -30,6 +33,12 @@ export interface IStorage {
   createDiscussion(discussion: Omit<Discussion, "id">): Promise<Discussion>;
   getDiscussion(id: number): Promise<Discussion | undefined>;
   getAllDiscussions(): Promise<Discussion[]>;
+  upvoteDiscussion(id: number, userId: number): Promise<Discussion | undefined>;
+  
+  // Replies
+  createReply(reply: Omit<Reply, "id">): Promise<Reply>;
+  getRepliesByDiscussion(discussionId: number): Promise<Reply[]>;
+  upvoteReply(id: number, userId: number): Promise<Reply | undefined>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -154,6 +163,81 @@ export class DatabaseStorage implements IStorage {
 
   async getAllDiscussions(): Promise<Discussion[]> {
     return db.select().from(discussions);
+  }
+  
+  async upvoteDiscussion(id: number, userId: number): Promise<Discussion | undefined> {
+    const discussion = await this.getDiscussion(id);
+    if (!discussion) return undefined;
+    
+    const upvotedBy = discussion.upvotedBy || [];
+    
+    // Check if user already upvoted
+    if (upvotedBy.includes(userId)) {
+      // Remove upvote
+      const newUpvotedBy = upvotedBy.filter(uid => uid !== userId);
+      const [updated] = await db
+        .update(discussions)
+        .set({
+          upvotedBy: newUpvotedBy,
+          upvotes: Math.max(0, (discussion.upvotes || 0) - 1)
+        })
+        .where(eq(discussions.id, id))
+        .returning();
+      return updated;
+    } else {
+      // Add upvote
+      const [updated] = await db
+        .update(discussions)
+        .set({
+          upvotedBy: [...upvotedBy, userId],
+          upvotes: (discussion.upvotes || 0) + 1
+        })
+        .where(eq(discussions.id, id))
+        .returning();
+      return updated;
+    }
+  }
+  
+  async createReply(reply: Omit<Reply, "id">): Promise<Reply> {
+    const [newReply] = await db.insert(replies).values(reply).returning();
+    return newReply;
+  }
+  
+  async getRepliesByDiscussion(discussionId: number): Promise<Reply[]> {
+    return db.select().from(replies).where(eq(replies.discussionId, discussionId));
+  }
+  
+  async upvoteReply(id: number, userId: number): Promise<Reply | undefined> {
+    const [reply] = await db.select().from(replies).where(eq(replies.id, id));
+    if (!reply) return undefined;
+    
+    const upvotedBy = reply.upvotedBy || [];
+    
+    // Check if user already upvoted
+    if (upvotedBy.includes(userId)) {
+      // Remove upvote
+      const newUpvotedBy = upvotedBy.filter(uid => uid !== userId);
+      const [updated] = await db
+        .update(replies)
+        .set({
+          upvotedBy: newUpvotedBy,
+          upvotes: Math.max(0, (reply.upvotes || 0) - 1)
+        })
+        .where(eq(replies.id, id))
+        .returning();
+      return updated;
+    } else {
+      // Add upvote
+      const [updated] = await db
+        .update(replies)
+        .set({
+          upvotedBy: [...upvotedBy, userId],
+          upvotes: (reply.upvotes || 0) + 1
+        })
+        .where(eq(replies.id, id))
+        .returning();
+      return updated;
+    }
   }
 }
 
