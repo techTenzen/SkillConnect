@@ -27,9 +27,9 @@ export default function NavBar() {
         <div className="container mx-auto px-4">
           <div className="flex h-14 items-center justify-between">
             <Link href="/">
-              <a className="font-bold text-xl">
+              <div className="font-bold text-xl cursor-pointer">
                 VIT-AP SkillConnect
-              </a>
+              </div>
             </Link>
             <div className="flex items-center gap-4">
               <Link href="/auth?mode=login">
@@ -53,8 +53,8 @@ export default function NavBar() {
         <div className="flex items-center space-x-4 lg:space-x-6">
           {navItems.map(({ path, label, icon: Icon }) => (
             <Link key={path} href={path}>
-              <a
-                className={`flex items-center space-x-2 text-sm font-medium transition-colors hover:text-primary ${
+              <div
+                className={`flex items-center space-x-2 text-sm font-medium transition-colors hover:text-primary cursor-pointer ${
                   location === path
                     ? "text-primary"
                     : "text-muted-foreground"
@@ -62,7 +62,7 @@ export default function NavBar() {
               >
                 <Icon className="h-4 w-4" />
                 <span>{label}</span>
-              </a>
+              </div>
             </Link>
           ))}
         </div>

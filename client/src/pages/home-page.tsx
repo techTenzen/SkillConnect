@@ -76,12 +76,12 @@ export default function HomePage() {
                   <Loader2 className="h-8 w-8 animate-spin mx-auto" />
                 ) : projects?.slice(0, 3).map((project) => (
                   <Link key={project.id} href={`/projects/${project.id}`}>
-                    <a className="block p-3 hover:bg-muted rounded-lg mb-2">
+                    <div className="block p-3 hover:bg-muted rounded-lg mb-2 cursor-pointer">
                       <h4 className="font-medium">{project.title}</h4>
                       <p className="text-sm text-muted-foreground truncate">
                         {project.description}
                       </p>
-                    </a>
+                    </div>
                   </Link>
                 ))}
               </CardContent>
@@ -101,14 +101,14 @@ export default function HomePage() {
                   <Loader2 className="h-8 w-8 animate-spin mx-auto" />
                 ) : discussions?.slice(0, 3).map((discussion) => (
                   <Link key={discussion.id} href={`/forum/${discussion.id}`}>
-                    <a className="block p-3 hover:bg-muted rounded-lg mb-2">
+                    <div className="block p-3 hover:bg-muted rounded-lg mb-2 cursor-pointer">
                       <h4 className="font-medium">{discussion.title}</h4>
                       <div className="flex items-center text-sm text-muted-foreground">
                         <span>{discussion.category}</span>
                         <span className="mx-2">•</span>
                         <span>{discussion.upvotes} upvotes</span>
                       </div>
-                    </a>
+                    </div>
                   </Link>
                 ))}
               </CardContent>
