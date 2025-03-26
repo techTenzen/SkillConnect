@@ -51,6 +51,16 @@ export const replies = pgTable("replies", {
   parentReplyId: integer("parent_reply_id"), // For nested replies
 });
 
+export const invitations = pgTable("invitations", {
+  id: serial("id").primaryKey(),
+  senderId: integer("sender_id").notNull(),
+  recipientId: integer("recipient_id").notNull(),
+  projectId: integer("project_id").notNull(),
+  status: text("status").notNull().default("pending"), // pending, accepted, declined
+  message: text("message"),
+  createdAt: text("created_at").notNull(),
+});
+
 export const insertUserSchema = createInsertSchema(users).pick({
   username: true,
   password: true,
@@ -83,9 +93,17 @@ export const insertReplySchema = createInsertSchema(replies).pick({
   parentReplyId: true,
 });
 
+export const insertInvitationSchema = createInsertSchema(invitations).pick({
+  recipientId: true,
+  projectId: true,
+  message: true,
+});
+
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type InsertReply = z.infer<typeof insertReplySchema>;
+export type InsertInvitation = z.infer<typeof insertInvitationSchema>;
 export type User = typeof users.$inferSelect;
 export type Project = typeof projects.$inferSelect;
 export type Discussion = typeof discussions.$inferSelect;
 export type Reply = typeof replies.$inferSelect;
+export type Invitation = typeof invitations.$inferSelect;

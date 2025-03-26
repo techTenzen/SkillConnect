@@ -19,6 +19,7 @@ export interface IStorage {
   getUserByUsername(username: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
   updateUser(id: number, updates: Partial<User>): Promise<User | undefined>;
+  getAllUsers(): Promise<User[]>;
 
   // Projects
   createProject(project: Omit<Project, "id">): Promise<Project>;
@@ -39,6 +40,11 @@ export interface IStorage {
   createReply(reply: Omit<Reply, "id">): Promise<Reply>;
   getRepliesByDiscussion(discussionId: number): Promise<Reply[]>;
   upvoteReply(id: number, userId: number): Promise<Reply | undefined>;
+  
+  // Invitations
+  createInvitation(invitation: Omit<Invitation, "id" | "senderId" | "status" | "createdAt">): Promise<Invitation>;
+  getInvitationsByUser(userId: number): Promise<Invitation[]>;
+  respondToInvitation(id: number, status: "accepted" | "declined"): Promise<Invitation | undefined>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -238,6 +244,62 @@ export class DatabaseStorage implements IStorage {
         .returning();
       return updated;
     }
+  }
+
+  // Get all users for networking
+  async getAllUsers(): Promise<User[]> {
+    return db.select().from(users);
+  }
+
+  // Create an invitation
+  async createInvitation(invitation: Omit<Invitation, "id" | "senderId" | "status" | "createdAt">): Promise<Invitation> {
+    const fullInvitation = {
+      ...invitation,
+      senderId: 0, // This will be set in the route handler
+      status: "pending",
+      createdAt: new Date().toISOString(),
+    };
+    
+    const [newInvitation] = await db.insert(invitations).values(fullInvitation).returning();
+    return newInvitation;
+  }
+
+  // Get invitations for a user (both sent and received)
+  async getInvitationsByUser(userId: number): Promise<Invitation[]> {
+    return db
+      .select()
+      .from(invitations)
+      .where(
+        or(
+          eq(invitations.recipientId, userId),
+          eq(invitations.senderId, userId)
+        )
+      );
+  }
+
+  // Respond to an invitation (accept or decline)
+  async respondToInvitation(id: number, status: "accepted" | "declined"): Promise<Invitation | undefined> {
+    const [invitation] = await db
+      .update(invitations)
+      .set({ status })
+      .where(eq(invitations.id, id))
+      .returning();
+    
+    // If accepted, add the user to the project members
+    if (status === "accepted" && invitation) {
+      // Get the project and update its members
+      const project = await this.getProject(invitation.projectId);
+      if (project) {
+        const members = project.members || [];
+        if (!members.includes(invitation.recipientId)) {
+          await this.updateProject(invitation.projectId, {
+            members: [...members, invitation.recipientId]
+          });
+        }
+      }
+    }
+    
+    return invitation;
   }
 }
 
