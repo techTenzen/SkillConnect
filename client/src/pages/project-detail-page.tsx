@@ -46,6 +46,7 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
     },
     onSuccess: () => {
       setRequestSent(true);
+      queryClient.invalidateQueries({ queryKey: ["/api/projects", params.id] });
       toast({
         title: "Request sent",
         description: "Your request to join this project has been sent to the owner.",
@@ -54,6 +55,48 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
     onError: (error: Error) => {
       toast({
         title: "Request failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const acceptRequestMutation = useMutation({
+    mutationFn: async ({ userId }: { userId: number }) => {
+      const res = await apiRequest("POST", `/api/projects/${params.id}/accept`, { userId });
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/projects", params.id] });
+      toast({
+        title: "Request accepted",
+        description: "The user has been added to the project team.",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Failed to accept request",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const rejectRequestMutation = useMutation({
+    mutationFn: async ({ userId }: { userId: number }) => {
+      const res = await apiRequest("POST", `/api/projects/${params.id}/reject`, { userId });
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/projects", params.id] });
+      toast({
+        title: "Request rejected",
+        description: "The join request has been declined.",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Failed to reject request",
         description: error.message,
         variant: "destructive",
       });

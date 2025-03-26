@@ -38,7 +38,6 @@ export function registerRoutes(app: Express): Server {
       const project = await storage.createProject({
         ...validated,
         ownerId: req.user.id,
-        ownerName: req.user.username,
         members: [req.user.id],
         joinRequests: [],
         status: "open",

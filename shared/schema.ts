@@ -17,7 +17,6 @@ export const projects = pgTable("projects", {
   title: text("title").notNull(),
   description: text("description").notNull(),
   ownerId: integer("owner_id").notNull(),
-  ownerName: text("owner_name"),
   skills: jsonb("skills").$type<string[]>(),
   tools: jsonb("tools").$type<string[]>(),
   rolesSought: jsonb("roles_sought").$type<string[]>(),
