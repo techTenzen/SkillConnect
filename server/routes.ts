@@ -98,6 +98,12 @@ export function registerRoutes(app: Express): Server {
     res.json(discussions);
   });
 
+  app.get("/api/discussions/:id", async (req, res) => {
+    const discussion = await storage.getDiscussion(parseInt(req.params.id));
+    if (!discussion) return res.sendStatus(404);
+    res.json(discussion);
+  });
+
   app.post("/api/discussions", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
 
@@ -107,6 +113,7 @@ export function registerRoutes(app: Express): Server {
         ...validated,
         authorId: req.user.id,
         upvotes: 0,
+        upvotedBy: [],
         createdAt: new Date().toISOString(),
       });
 
@@ -115,6 +122,60 @@ export function registerRoutes(app: Express): Server {
       console.error("Discussion creation error:", error);
       res.status(400).json({ message: "Invalid discussion data" });
     }
+  });
+  
+  app.post("/api/discussions/:id/upvote", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    
+    const discussionId = parseInt(req.params.id);
+    const userId = req.user.id;
+    
+    const discussion = await storage.upvoteDiscussion(discussionId, userId);
+    if (!discussion) return res.sendStatus(404);
+    
+    res.json(discussion);
+  });
+  
+  // Reply routes
+  app.get("/api/discussions/:id/replies", async (req, res) => {
+    const discussionId = parseInt(req.params.id);
+    const replies = await storage.getRepliesByDiscussion(discussionId);
+    res.json(replies);
+  });
+  
+  app.post("/api/discussions/:id/replies", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    
+    const discussionId = parseInt(req.params.id);
+    
+    try {
+      const validated = insertReplySchema.parse(req.body);
+      const reply = await storage.createReply({
+        ...validated,
+        discussionId,
+        authorId: req.user.id,
+        upvotes: 0,
+        upvotedBy: [],
+        createdAt: new Date().toISOString(),
+      });
+      
+      res.status(201).json(reply);
+    } catch (error) {
+      console.error("Reply creation error:", error);
+      res.status(400).json({ message: "Invalid reply data" });
+    }
+  });
+  
+  app.post("/api/replies/:id/upvote", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    
+    const replyId = parseInt(req.params.id);
+    const userId = req.user.id;
+    
+    const reply = await storage.upvoteReply(replyId, userId);
+    if (!reply) return res.sendStatus(404);
+    
+    res.json(reply);
   });
 
   // AI Chat route

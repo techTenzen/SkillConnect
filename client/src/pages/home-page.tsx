@@ -100,7 +100,7 @@ export default function HomePage() {
                 {discussionsLoading ? (
                   <Loader2 className="h-8 w-8 animate-spin mx-auto" />
                 ) : discussions?.slice(0, 3).map((discussion) => (
-                  <Link key={discussion.id} href={`/forum/${discussion.id}`}>
+                  <Link key={discussion.id} href={`/discussions/${discussion.id}`}>
                     <div className="block p-3 hover:bg-muted rounded-lg mb-2 cursor-pointer">
                       <h4 className="font-medium">{discussion.title}</h4>
                       <div className="flex items-center text-sm text-muted-foreground">

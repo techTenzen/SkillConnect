@@ -78,7 +78,6 @@ export const insertDiscussionSchema = createInsertSchema(discussions).pick({
 });
 
 export const insertReplySchema = createInsertSchema(replies).pick({
-  discussionId: true,
   content: true,
 });
 
