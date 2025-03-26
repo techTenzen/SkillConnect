@@ -18,7 +18,7 @@ async function addSampleDiscussions() {
         title: "Best resources to learn React.js in 2023?",
         content: "Hi everyone! I'm looking to improve my React skills this semester. What are the best resources you've found for learning React in depth? Any courses, books, or YouTube channels you'd recommend? Thanks in advance!",
         author_id: getRandomUserId(allUsers),
-        tags: ["React", "Frontend", "Learning Resources", "JavaScript"],
+        category: "Web Development",
         upvoted_by: [],
         created_at: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000) // 14 days ago
       },
@@ -26,7 +26,7 @@ async function addSampleDiscussions() {
         title: "Finding teammates for AI hackathon next month",
         content: "I'm planning to participate in the upcoming AI hackathon next month and I'm looking for teammates. I have experience with TensorFlow and NLP but would love to team up with someone who has strong frontend skills and possibly someone with experience in computer vision. Anyone interested?",
         author_id: getRandomUserId(allUsers),
-        tags: ["Hackathon", "AI", "Team Building", "Machine Learning"],
+        category: "AI & Machine Learning",
         upvoted_by: [],
         created_at: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000) // 10 days ago
       },
@@ -34,7 +34,7 @@ async function addSampleDiscussions() {
         title: "How to balance academics with side projects?",
         content: "I'm finding it challenging to balance my coursework with all the side projects I want to work on. Any advice from those who have successfully managed both? How do you prioritize your time and still make progress on personal projects?",
         author_id: getRandomUserId(allUsers),
-        tags: ["Time Management", "Study Tips", "Personal Projects", "Student Life"],
+        category: "Student Life",
         upvoted_by: [],
         created_at: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) // 7 days ago
       },
@@ -42,7 +42,7 @@ async function addSampleDiscussions() {
         title: "Recommended tools for UI/UX design beginners?",
         content: "I'm a computer science student looking to expand my skills into UI/UX design. What tools would you recommend for a beginner? I've heard of Figma and Adobe XD, but would love to hear your experiences and recommendations for learning resources as well.",
         author_id: getRandomUserId(allUsers),
-        tags: ["UI/UX Design", "Design Tools", "Learning", "Figma"],
+        category: "Design",
         upvoted_by: [],
         created_at: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000) // 5 days ago
       },
@@ -50,7 +50,7 @@ async function addSampleDiscussions() {
         title: "Internship preparation advice needed",
         content: "I'm a sophomore and starting to look for internships for next summer. What should I be focusing on to make my application stand out? Also, how early should I start applying? Any advice on portfolio projects that would impress tech companies?",
         author_id: getRandomUserId(allUsers),
-        tags: ["Internships", "Career Advice", "Job Search", "Portfolio"],
+        category: "Career",
         upvoted_by: [],
         created_at: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000) // 3 days ago
       },
@@ -58,7 +58,7 @@ async function addSampleDiscussions() {
         title: "Best practices for database design in web applications",
         content: "I'm working on a web application for my senior project and need advice on database design. I'm trying to decide between SQL and NoSQL for my particular use case. The app will need to store user profiles, project details, and messages. What's your approach to database selection and design?",
         author_id: getRandomUserId(allUsers),
-        tags: ["Database Design", "SQL", "NoSQL", "Web Development"],
+        category: "Databases",
         upvoted_by: [],
         created_at: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000) // 2 days ago
       },
@@ -66,7 +66,7 @@ async function addSampleDiscussions() {
         title: "Thoughts on the new CS curriculum changes?",
         content: "Has anyone looked at the proposed changes to the CS curriculum for next year? I noticed they're adding more AI and machine learning courses but reducing the systems programming requirements. What do you all think about these changes?",
         author_id: getRandomUserId(allUsers),
-        tags: ["Curriculum", "Computer Science", "Education", "AI"],
+        category: "Education",
         upvoted_by: [],
         created_at: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000) // 1 day ago
       },
@@ -74,7 +74,7 @@ async function addSampleDiscussions() {
         title: "Remote collaboration tools for programming teams",
         content: "My project team is completely remote this semester, and we're looking for the best tools to collaborate effectively. We need version control, task tracking, and good communication features. What tools have worked well for your remote teams?",
         author_id: getRandomUserId(allUsers),
-        tags: ["Remote Work", "Collaboration Tools", "Team Projects", "Software Development"],
+        category: "Collaboration",
         upvoted_by: [],
         created_at: new Date(Date.now() - 8 * 60 * 60 * 1000) // 8 hours ago
       }
