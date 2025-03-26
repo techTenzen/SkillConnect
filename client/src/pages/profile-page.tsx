@@ -151,18 +151,26 @@ export default function ProfilePage() {
   const [activeTab, setActiveTab] = useState("profile");
 
   // Fetch user's projects
-  const { data: projects = [] } = useQuery<Project[]>({
+  const { data: projects = [] } = useQuery({
     queryKey: ["/api/projects"],
     queryFn: async ({ signal }) => {
-      const data = await apiRequest<Project[]>("GET", "/api/projects", undefined, { signal });
-      // Filter to only show projects the user is owner of or member of
-      if (user) {
-        return data.filter(project => 
-          project.ownerId === user.id || 
-          (project.members && project.members.includes(user.id))
-        );
+      try {
+        const data = await apiRequest("GET", "/api/projects", undefined, { signal });
+        // Ensure data is an array
+        const projectsArray = Array.isArray(data) ? data : [];
+        
+        // Filter to only show projects the user is owner of or member of
+        if (user) {
+          return projectsArray.filter((project: Project) => 
+            project.ownerId === user.id || 
+            (project.members && project.members.includes(user.id))
+          );
+        }
+        return [];
+      } catch (error) {
+        console.error("Error fetching projects:", error);
+        return [];
       }
-      return [];
     },
     enabled: !!user,
   });

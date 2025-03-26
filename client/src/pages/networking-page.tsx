@@ -133,8 +133,14 @@ export default function NetworkingPage() {
   const { data: users = [], isLoading: isLoadingUsers } = useQuery<Omit<User, "password">[]>({
     queryKey: ["/api/users"],
     queryFn: async ({ signal }) => {
-      const response = await apiRequest("GET", "/api/users", undefined, { signal });
-      return response;
+      try {
+        const response = await apiRequest("GET", "/api/users", undefined, { signal });
+        // Return empty array if response is not an array
+        return Array.isArray(response) ? response : [];
+      } catch (error) {
+        console.error("Error fetching users:", error);
+        return [];
+      }
     },
   });
   
@@ -142,9 +148,17 @@ export default function NetworkingPage() {
   const { data: invitations = [], isLoading: isLoadingInvitations } = useQuery<Invitation[]>({
     queryKey: ["/api/invitations"],
     queryFn: async ({ signal }) => {
-      const response = await apiRequest("GET", "/api/invitations", undefined, { signal });
-      return response;
+      try {
+        const response = await apiRequest("GET", "/api/invitations", undefined, { signal });
+        // Return empty array if response is not an array
+        return Array.isArray(response) ? response : [];
+      } catch (error) {
+        console.error("Error fetching invitations:", error);
+        return [];
+      }
     },
+    // Disable this query until the invitations table exists
+    enabled: false,
   });
   
   // Create invitation mutation
