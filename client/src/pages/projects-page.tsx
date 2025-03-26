@@ -62,6 +62,10 @@ export default function ProjectsPage() {
     queryKey: ["/api/projects"],
   });
   
+  const { data: allUsers } = useQuery<User[]>({
+    queryKey: ["/api/users"],
+  });
+  
   // Filter projects based on whether they have enough members
   // NOTE: Disabling filter temporarily to show all projects
   const projects = allProjects;
@@ -457,7 +461,9 @@ export default function ProjectsPage() {
                             {project.title}
                           </CardTitle>
                           <CardDescription className="text-sm">
-                            Posted by {project.ownerId === user?.id ? "you" : "another user"}
+                            Posted by {project.ownerId === user?.id 
+                              ? "you" 
+                              : (allUsers?.find(u => u.id === project.ownerId)?.username || "unknown user")}
                           </CardDescription>
                         </div>
                         <Button 
