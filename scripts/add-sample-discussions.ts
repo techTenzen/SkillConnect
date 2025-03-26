@@ -103,9 +103,9 @@ async function addSampleDiscussions() {
         // Use SQL to insert directly
         const result = await db.execute(
           sql`INSERT INTO discussions 
-              (title, content, author_id, tags, upvoted_by, created_at)
+              (title, content, author_id, category, upvoted_by, created_at)
               VALUES 
-              (${discussion.title}, ${discussion.content}, ${discussion.author_id}, ${JSON.stringify(discussion.tags)}, 
+              (${discussion.title}, ${discussion.content}, ${discussion.author_id}, ${discussion.category}, 
                ${JSON.stringify(discussion.upvoted_by)}, ${discussion.created_at.toISOString()})
               RETURNING id`
         );
