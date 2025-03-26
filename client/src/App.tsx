@@ -17,6 +17,7 @@ import ChatPage from "@/pages/chat-page";
 import DiscussionDetailPage from "@/pages/discussion-detail-page";
 import NetworkingPage from "@/pages/networking-page";
 import UserProfilePage from "@/pages/user-profile-page";
+import ChatNetworkingPage from "@/pages/chat-networking-page";
 
 function Router() {
   return (
@@ -36,7 +37,7 @@ function Router() {
           <ProtectedRoute path="/discussions/:id" component={() => <DiscussionDetailPage params={params} />} />
         )}
       </Route>
-      <ProtectedRoute path="/chat" component={ChatPage} />
+      <ProtectedRoute path="/chat" component={ChatNetworkingPage} />
       <ProtectedRoute path="/networking" component={NetworkingPage} />
       <Route path="/users/:id">
         {(params) => (
