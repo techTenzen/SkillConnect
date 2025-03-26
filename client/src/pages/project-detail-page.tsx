@@ -150,7 +150,7 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
                         {project.title}
                       </CardTitle>
                       <CardDescription>
-                        Posted by {isOwner ? "you" : project.ownerName || "another user"}
+                        Posted by {isOwner ? "you" : "another user"}
                       </CardDescription>
                     </div>
                     {!isOwner && (
