@@ -1,10 +1,10 @@
 import { 
   InsertUser, User, Project, Discussion, 
-  Reply, InsertReply
+  Reply, InsertReply, Invitation, InsertInvitation
 } from "@shared/schema";
-import { users, projects, discussions, replies } from "@shared/schema";
+import { users, projects, discussions, replies, invitations } from "@shared/schema";
 import { db } from "./db";
-import { eq } from "drizzle-orm";
+import { eq, or } from "drizzle-orm";
 import session from "express-session";
 import connectPg from "connect-pg-simple";
 import { pool } from "./db";

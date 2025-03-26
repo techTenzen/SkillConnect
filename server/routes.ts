@@ -2,7 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { setupAuth } from "./auth";
 import { storage } from "./storage";
-import { insertProjectSchema, insertDiscussionSchema, insertReplySchema } from "@shared/schema";
+import { insertProjectSchema, insertDiscussionSchema, insertReplySchema, insertInvitationSchema } from "@shared/schema";
 import { getAIResponse } from "./ai";
 
 export function registerRoutes(app: Express): Server {
@@ -176,6 +176,58 @@ export function registerRoutes(app: Express): Server {
     if (!reply) return res.sendStatus(404);
     
     res.json(reply);
+  });
+
+  // Networking routes
+  app.get("/api/users", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    
+    const users = await storage.getAllUsers();
+    // Don't send passwords to the client
+    const sanitizedUsers = users.map(({ password, ...user }) => user);
+    res.json(sanitizedUsers);
+  });
+  
+  app.get("/api/invitations", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    
+    const invitations = await storage.getInvitationsByUser(req.user.id);
+    res.json(invitations);
+  });
+  
+  app.post("/api/invitations", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    
+    try {
+      const validated = insertInvitationSchema.parse(req.body);
+      
+      // Add the sender ID and set status and created date
+      const invitation = await storage.createInvitation({
+        ...validated,
+        senderId: req.user.id,
+      });
+      
+      res.status(201).json(invitation);
+    } catch (error) {
+      console.error("Invitation creation error:", error);
+      res.status(400).json({ message: "Invalid invitation data" });
+    }
+  });
+  
+  app.post("/api/invitations/:id/respond", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    
+    const invitationId = parseInt(req.params.id);
+    const status = req.body.status;
+    
+    if (status !== "accepted" && status !== "declined") {
+      return res.status(400).json({ message: "Status must be 'accepted' or 'declined'" });
+    }
+    
+    const invitation = await storage.respondToInvitation(invitationId, status);
+    if (!invitation) return res.sendStatus(404);
+    
+    res.json(invitation);
   });
 
   // AI Chat route

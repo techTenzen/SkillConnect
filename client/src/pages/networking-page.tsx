@@ -1,0 +1,295 @@
+import { useState } from "react";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { useAuth } from "@/hooks/use-auth";
+import { queryClient, apiRequest } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
+import { Button } from "@/components/ui/button";
+import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
+import { Loader2, UserPlus2, Send, X, Check } from "lucide-react";
+import { User, Invitation } from "@shared/schema";
+
+interface UserCardProps {
+  user: Omit<User, "password">;
+  onConnect: (userId: number) => void;
+  isConnecting: boolean;
+}
+
+function UserCard({ user, onConnect, isConnecting }: UserCardProps) {
+  const { user: currentUser } = useAuth();
+  
+  // Don't show the current user
+  if (user.id === currentUser?.id) return null;
+  
+  // Get user initials for avatar fallback
+  const initials = user.username.substring(0, 2).toUpperCase();
+  
+  return (
+    <Card className="w-full max-w-[300px]">
+      <CardContent className="pt-6 flex flex-col items-center">
+        <Avatar className="h-16 w-16 mb-2">
+          <AvatarImage src={user.avatar || ""} alt={user.username} />
+          <AvatarFallback>{initials}</AvatarFallback>
+        </Avatar>
+        <h3 className="font-medium text-lg">{user.username}</h3>
+        <p className="text-sm text-muted-foreground mb-2">{user.bio || "No bio available"}</p>
+        
+        {user.skills && Object.keys(user.skills).length > 0 && (
+          <div className="flex flex-wrap gap-1 my-2 justify-center">
+            {Object.entries(user.skills).slice(0, 3).map(([skill]) => (
+              <Badge key={skill} variant="outline" className="text-xs">
+                {skill}
+              </Badge>
+            ))}
+            {Object.keys(user.skills).length > 3 && (
+              <Badge variant="outline" className="text-xs">
+                +{Object.keys(user.skills).length - 3} more
+              </Badge>
+            )}
+          </div>
+        )}
+      </CardContent>
+      <CardFooter className="flex justify-center pb-4">
+        <Button 
+          onClick={() => onConnect(user.id)} 
+          disabled={isConnecting}
+          className="w-full"
+        >
+          {isConnecting ? (
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+          ) : (
+            <UserPlus2 className="mr-2 h-4 w-4" />
+          )}
+          Connect
+        </Button>
+      </CardFooter>
+    </Card>
+  );
+}
+
+interface InvitationCardProps {
+  invitation: Invitation;
+  user?: Omit<User, "password">;
+  onAccept: (id: number) => void;
+  onDecline: (id: number) => void;
+  isResponding: boolean;
+}
+
+function InvitationCard({ invitation, user, onAccept, onDecline, isResponding }: InvitationCardProps) {
+  // Get user initials for avatar fallback
+  const initials = user ? user.username.substring(0, 2).toUpperCase() : "??";
+  
+  return (
+    <Card className="w-full">
+      <CardContent className="pt-6 flex items-center">
+        <Avatar className="h-12 w-12 mr-4">
+          <AvatarImage src={user?.avatar || ""} alt={user?.username} />
+          <AvatarFallback>{initials}</AvatarFallback>
+        </Avatar>
+        <div className="flex-1">
+          <h3 className="font-medium">
+            {user ? user.username : `User #${invitation.senderId}`}
+          </h3>
+          {invitation.projectId && (
+            <p className="text-sm text-muted-foreground">
+              Invited you to join their project
+            </p>
+          )}
+          {invitation.message && (
+            <p className="text-sm mt-1">"{invitation.message}"</p>
+          )}
+        </div>
+        <div className="flex gap-2">
+          <Button 
+            size="sm" 
+            variant="destructive" 
+            onClick={() => onDecline(invitation.id)} 
+            disabled={isResponding}
+          >
+            <X className="h-4 w-4" />
+          </Button>
+          <Button 
+            size="sm" 
+            variant="default" 
+            onClick={() => onAccept(invitation.id)} 
+            disabled={isResponding}
+          >
+            <Check className="h-4 w-4" />
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+export default function NetworkingPage() {
+  const { user } = useAuth();
+  const { toast } = useToast();
+  const [activeTab, setActiveTab] = useState("people");
+  
+  // Fetch all users
+  const { data: users = [], isLoading: isLoadingUsers } = useQuery({
+    queryKey: ["/api/users"],
+    queryFn: ({ signal }) => apiRequest("GET", "/api/users", undefined, { signal }),
+  });
+  
+  // Fetch user's invitations
+  const { data: invitations = [], isLoading: isLoadingInvitations } = useQuery({
+    queryKey: ["/api/invitations"],
+    queryFn: ({ signal }) => apiRequest("GET", "/api/invitations", undefined, { signal }),
+  });
+  
+  // Create invitation mutation
+  const connectMutation = useMutation({
+    mutationFn: async (recipientId: number) => {
+      await apiRequest("POST", "/api/invitations", {
+        recipientId,
+        message: "I'd like to connect with you!",
+        projectId: null
+      });
+    },
+    onSuccess: () => {
+      toast({
+        title: "Connection request sent",
+        description: "The user will be notified of your request",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/invitations"] });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Failed to send connection request",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+  
+  // Accept invitation mutation
+  const acceptMutation = useMutation({
+    mutationFn: async (id: number) => {
+      await apiRequest("POST", `/api/invitations/${id}/respond`, {
+        status: "accepted"
+      });
+    },
+    onSuccess: () => {
+      toast({
+        title: "Invitation accepted",
+        description: "You are now connected",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/invitations"] });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Failed to accept invitation",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+  
+  // Decline invitation mutation
+  const declineMutation = useMutation({
+    mutationFn: async (id: number) => {
+      await apiRequest("POST", `/api/invitations/${id}/respond`, {
+        status: "declined"
+      });
+    },
+    onSuccess: () => {
+      toast({
+        title: "Invitation declined",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/invitations"] });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Failed to decline invitation",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+  
+  // Get pending invitations (received, not sent)
+  const pendingInvitations = invitations.filter(
+    inv => inv.recipientId === user?.id && inv.status === "pending"
+  );
+  
+  // Find user data for each invitation
+  const findUserById = (userId: number) => {
+    return users.find(u => u.id === userId);
+  };
+  
+  if (!user) return null;
+  
+  return (
+    <div className="container py-8">
+      <h1 className="text-3xl font-bold mb-8">Networking</h1>
+      
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <TabsList className="grid w-full grid-cols-2 mb-8">
+          <TabsTrigger value="people">People</TabsTrigger>
+          <TabsTrigger value="invitations" className="relative">
+            Invitations
+            {pendingInvitations.length > 0 && (
+              <Badge variant="destructive" className="ml-2">
+                {pendingInvitations.length}
+              </Badge>
+            )}
+          </TabsTrigger>
+        </TabsList>
+        
+        <TabsContent value="people">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+            {isLoadingUsers ? (
+              <div className="col-span-full flex justify-center py-12">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              </div>
+            ) : users.length === 0 ? (
+              <div className="col-span-full text-center py-12 text-muted-foreground">
+                No users found
+              </div>
+            ) : (
+              users
+                .filter(u => u.id !== user.id)
+                .map(otherUser => (
+                  <UserCard
+                    key={otherUser.id}
+                    user={otherUser}
+                    onConnect={(userId) => connectMutation.mutate(userId)}
+                    isConnecting={connectMutation.isPending}
+                  />
+                ))
+            )}
+          </div>
+        </TabsContent>
+        
+        <TabsContent value="invitations">
+          <div className="space-y-4">
+            {isLoadingInvitations ? (
+              <div className="flex justify-center py-12">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              </div>
+            ) : pendingInvitations.length === 0 ? (
+              <div className="text-center py-12 text-muted-foreground">
+                No pending invitations
+              </div>
+            ) : (
+              pendingInvitations.map(invitation => (
+                <InvitationCard
+                  key={invitation.id}
+                  invitation={invitation}
+                  user={findUserById(invitation.senderId)}
+                  onAccept={(id) => acceptMutation.mutate(id)}
+                  onDecline={(id) => declineMutation.mutate(id)}
+                  isResponding={acceptMutation.isPending || declineMutation.isPending}
+                />
+              ))
+            )}
+          </div>
+        </TabsContent>
+      </Tabs>
+    </div>
+  );
+}
