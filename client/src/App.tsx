@@ -14,6 +14,7 @@ import ProjectsPage from "@/pages/projects-page";
 import ProjectDetailPage from "@/pages/project-detail-page";
 import ForumPage from "@/pages/forum-page";
 import ChatPage from "@/pages/chat-page";
+import DiscussionDetailPage from "@/pages/discussion-detail-page";
 
 function Router() {
   return (
@@ -28,6 +29,11 @@ function Router() {
         )}
       </Route>
       <ProtectedRoute path="/forum" component={ForumPage} />
+      <Route path="/discussions/:id">
+        {(params) => (
+          <ProtectedRoute path="/discussions/:id" component={() => <DiscussionDetailPage params={params} />} />
+        )}
+      </Route>
       <ProtectedRoute path="/chat" component={ChatPage} />
       <Route path="/auth" component={AuthPage} />
       <Route component={NotFound} />
