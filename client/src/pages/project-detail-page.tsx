@@ -226,8 +226,21 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
                             <span>User #{requesterId}</span>
                           </div>
                           <div className="flex gap-2">
-                            <Button size="sm" variant="outline">Accept</Button>
-                            <Button size="sm" variant="outline" className="text-red-500">Decline</Button>
+                            <Button 
+                              size="sm" 
+                              variant="outline"
+                              onClick={() => acceptRequestMutation.mutate({ userId: requesterId })}
+                              disabled={acceptRequestMutation.isPending}>
+                              Accept
+                            </Button>
+                            <Button 
+                              size="sm" 
+                              variant="outline" 
+                              className="text-red-500"
+                              onClick={() => rejectRequestMutation.mutate({ userId: requesterId })}
+                              disabled={rejectRequestMutation.isPending}>
+                              Decline
+                            </Button>
                           </div>
                         </div>
                       ))}

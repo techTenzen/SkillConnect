@@ -24,6 +24,12 @@ export function registerRoutes(app: Express): Server {
     res.json(projects);
   });
 
+  app.get("/api/projects/:id", async (req, res) => {
+    const project = await storage.getProject(parseInt(req.params.id));
+    if (!project) return res.sendStatus(404);
+    res.json(project);
+  });
+
   app.post("/api/projects", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
 
@@ -32,7 +38,9 @@ export function registerRoutes(app: Express): Server {
       const project = await storage.createProject({
         ...validated,
         ownerId: req.user.id,
+        ownerName: req.user.username,
         members: [req.user.id],
+        joinRequests: [],
         status: "open",
       });
 
@@ -41,6 +49,48 @@ export function registerRoutes(app: Express): Server {
       console.error("Project creation error:", error);
       res.status(400).json({ message: "Invalid project data" });
     }
+  });
+
+  app.post("/api/projects/:id/join", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    
+    const projectId = parseInt(req.params.id);
+    const userId = req.user.id;
+    
+    const project = await storage.requestToJoinProject(projectId, userId);
+    if (!project) return res.sendStatus(404);
+    
+    res.json(project);
+  });
+
+  app.post("/api/projects/:id/accept", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    
+    const projectId = parseInt(req.params.id);
+    const project = await storage.getProject(projectId);
+    
+    if (!project) return res.sendStatus(404);
+    if (project.ownerId !== req.user.id) return res.sendStatus(403);
+    
+    const userId = parseInt(req.body.userId);
+    const updatedProject = await storage.acceptJoinRequest(projectId, userId);
+    
+    res.json(updatedProject);
+  });
+
+  app.post("/api/projects/:id/reject", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    
+    const projectId = parseInt(req.params.id);
+    const project = await storage.getProject(projectId);
+    
+    if (!project) return res.sendStatus(404);
+    if (project.ownerId !== req.user.id) return res.sendStatus(403);
+    
+    const userId = parseInt(req.body.userId);
+    const updatedProject = await storage.rejectJoinRequest(projectId, userId);
+    
+    res.json(updatedProject);
   });
 
   // Discussion routes

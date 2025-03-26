@@ -21,6 +21,10 @@ export interface IStorage {
   createProject(project: Omit<Project, "id">): Promise<Project>;
   getProject(id: number): Promise<Project | undefined>;
   getAllProjects(): Promise<Project[]>;
+  updateProject(id: number, updates: Partial<Project>): Promise<Project | undefined>;
+  requestToJoinProject(projectId: number, userId: number): Promise<Project | undefined>;
+  acceptJoinRequest(projectId: number, userId: number): Promise<Project | undefined>;
+  rejectJoinRequest(projectId: number, userId: number): Promise<Project | undefined>;
 
   // Discussions
   createDiscussion(discussion: Omit<Discussion, "id">): Promise<Discussion>;
@@ -74,6 +78,68 @@ export class DatabaseStorage implements IStorage {
 
   async getAllProjects(): Promise<Project[]> {
     return db.select().from(projects);
+  }
+
+  async updateProject(id: number, updates: Partial<Project>): Promise<Project | undefined> {
+    const [project] = await db
+      .update(projects)
+      .set(updates)
+      .where(eq(projects.id, id))
+      .returning();
+    return project;
+  }
+
+  async requestToJoinProject(projectId: number, userId: number): Promise<Project | undefined> {
+    const project = await this.getProject(projectId);
+    if (!project) return undefined;
+
+    const joinRequests = project.joinRequests || [];
+    
+    // Check if user already requested to join
+    if (joinRequests.includes(userId)) {
+      return project;
+    }
+
+    // Add user to join requests
+    return this.updateProject(projectId, {
+      joinRequests: [...joinRequests, userId]
+    });
+  }
+
+  async acceptJoinRequest(projectId: number, userId: number): Promise<Project | undefined> {
+    const project = await this.getProject(projectId);
+    if (!project) return undefined;
+
+    const joinRequests = project.joinRequests || [];
+    const members = project.members || [];
+    
+    // Check if user is in join requests
+    if (!joinRequests.includes(userId)) {
+      return project;
+    }
+
+    // Remove user from join requests and add to members
+    return this.updateProject(projectId, {
+      joinRequests: joinRequests.filter(id => id !== userId),
+      members: [...members, userId]
+    });
+  }
+
+  async rejectJoinRequest(projectId: number, userId: number): Promise<Project | undefined> {
+    const project = await this.getProject(projectId);
+    if (!project) return undefined;
+
+    const joinRequests = project.joinRequests || [];
+    
+    // Check if user is in join requests
+    if (!joinRequests.includes(userId)) {
+      return project;
+    }
+
+    // Remove user from join requests
+    return this.updateProject(projectId, {
+      joinRequests: joinRequests.filter(id => id !== userId)
+    });
   }
 
   async createDiscussion(discussion: Omit<Discussion, "id">): Promise<Discussion> {

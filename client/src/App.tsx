@@ -22,7 +22,11 @@ function Router() {
       <ProtectedRoute path="/dashboard" component={HomePage} />
       <ProtectedRoute path="/profile" component={ProfilePage} />
       <ProtectedRoute path="/projects" component={ProjectsPage} />
-      <ProtectedRoute path="/projects/:id" component={({ params }) => <ProjectDetailPage params={params} />} />
+      <Route path="/projects/:id">
+        {(params) => (
+          <ProtectedRoute path="/projects/:id" component={() => <ProjectDetailPage params={params} />} />
+        )}
+      </Route>
       <ProtectedRoute path="/forum" component={ForumPage} />
       <ProtectedRoute path="/chat" component={ChatPage} />
       <Route path="/auth" component={AuthPage} />
