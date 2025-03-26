@@ -27,7 +27,7 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Loader2, ThumbsUp, ArrowLeft } from "lucide-react";
+import { Loader2, ThumbsUp, ArrowLeft, X, MessageSquare } from "lucide-react";
 import { Link } from "wouter";
 
 export default function DiscussionDetailPage({ params }: { params: { id: string } }) {
@@ -43,6 +43,15 @@ export default function DiscussionDetailPage({ params }: { params: { id: string 
     queryKey: [`/api/discussions/${discussionId}/replies`],
     enabled: !!discussionId,
   });
+  
+  // Separate top-level replies and child replies
+  const topLevelReplies = replies?.filter(reply => !reply.parentReplyId);
+  const childReplies = replies?.filter(reply => reply.parentReplyId);
+  
+  // Function to get child replies for a parent reply
+  const getChildReplies = (parentId: number) => {
+    return childReplies?.filter(reply => reply.parentReplyId === parentId) || [];
+  };
 
   const [replyingTo, setReplyingTo] = useState<Reply | null>(null);
   
@@ -62,6 +71,7 @@ export default function DiscussionDetailPage({ params }: { params: { id: string 
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [`/api/discussions/${discussionId}/replies`] });
       form.reset();
+      setReplyingTo(null);
       toast({
         title: "Reply added",
         description: "Your reply has been posted successfully.",
@@ -75,6 +85,20 @@ export default function DiscussionDetailPage({ params }: { params: { id: string 
       });
     },
   });
+  
+  const handleReplyToComment = (reply: Reply) => {
+    setReplyingTo(reply);
+    
+    // TypeScript thinks parentReplyId should only be null, but we need to set it to a number
+    // This is a safe type assertion since our schema actually allows it
+    form.setValue("parentReplyId", reply.id as any);
+    
+    // Scroll to reply form
+    document.querySelector('.reply-form')?.scrollIntoView({ 
+      behavior: 'smooth',
+      block: 'center'
+    });
+  };
 
   const upvoteDiscussionMutation = useMutation({
     mutationFn: async () => {
@@ -177,7 +201,7 @@ export default function DiscussionDetailPage({ params }: { params: { id: string 
               <h2 className="text-xl font-bold mb-4">Replies</h2>
               
               {user && (
-                <Card className="mb-6">
+                <Card className="mb-6 reply-form">
                   <CardContent className="pt-6">
                     <Form {...form}>
                       <form
@@ -233,38 +257,103 @@ export default function DiscussionDetailPage({ params }: { params: { id: string 
 
               {replies && replies.length > 0 ? (
                 <div className="space-y-4">
-                  {replies.map((reply) => (
-                    <Card key={reply.id}>
-                      <CardHeader className="flex flex-row items-center space-y-0 pb-2">
-                        <div className="flex items-center gap-2">
-                          <Avatar>
-                            <AvatarFallback>{getInitials(reply.authorId)}</AvatarFallback>
-                          </Avatar>
-                          <div>
-                            <p className="text-sm font-medium">
-                              {reply.authorId === user?.id ? "You" : `User ${reply.authorId}`}
-                            </p>
-                            <p className="text-xs text-muted-foreground">
-                              {new Date(reply.createdAt).toLocaleString()}
-                            </p>
+                  {/* Show top level replies first */}
+                  {topLevelReplies?.map((reply) => (
+                    <div key={reply.id} className="space-y-2">
+                      {/* Original reply */}
+                      <Card>
+                        <CardHeader className="flex flex-row items-center space-y-0 pb-2">
+                          <div className="flex items-center gap-2">
+                            <Avatar>
+                              <AvatarFallback>{getInitials(reply.authorId)}</AvatarFallback>
+                            </Avatar>
+                            <div>
+                              <p className="text-sm font-medium">
+                                {reply.authorId === user?.id ? "You" : `User ${reply.authorId}`}
+                              </p>
+                              <p className="text-xs text-muted-foreground">
+                                {new Date(reply.createdAt).toLocaleString()}
+                              </p>
+                            </div>
                           </div>
+                        </CardHeader>
+                        <CardContent>
+                          <p className="whitespace-pre-wrap">{reply.content}</p>
+                        </CardContent>
+                        <CardFooter className="flex gap-2">
+                          <Button
+                            variant={hasUserUpvoted(reply.upvotedBy) ? "default" : "outline"}
+                            size="sm"
+                            onClick={() => upvoteReplyMutation.mutate(reply.id)}
+                            disabled={upvoteReplyMutation.isPending}
+                          >
+                            <ThumbsUp className="mr-2 h-4 w-4" />
+                            {reply.upvotes} Upvotes
+                          </Button>
+                          
+                          {user && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleReplyToComment(reply)}
+                            >
+                              <MessageSquare className="mr-2 h-4 w-4" />
+                              Reply
+                            </Button>
+                          )}
+                        </CardFooter>
+                      </Card>
+                      
+                      {/* Nested replies */}
+                      {getChildReplies(reply.id).length > 0 && (
+                        <div className="ml-8 space-y-2">
+                          {getChildReplies(reply.id).map(childReply => (
+                            <Card key={childReply.id} className="border-l-4 border-l-primary/30">
+                              <CardHeader className="flex flex-row items-center space-y-0 pb-2">
+                                <div className="flex items-center gap-2">
+                                  <Avatar className="h-6 w-6">
+                                    <AvatarFallback className="text-xs">{getInitials(childReply.authorId)}</AvatarFallback>
+                                  </Avatar>
+                                  <div>
+                                    <p className="text-sm font-medium">
+                                      {childReply.authorId === user?.id ? "You" : `User ${childReply.authorId}`}
+                                    </p>
+                                    <p className="text-xs text-muted-foreground">
+                                      {new Date(childReply.createdAt).toLocaleString()}
+                                    </p>
+                                  </div>
+                                </div>
+                              </CardHeader>
+                              <CardContent>
+                                <p className="whitespace-pre-wrap">{childReply.content}</p>
+                              </CardContent>
+                              <CardFooter className="flex gap-2">
+                                <Button
+                                  variant={hasUserUpvoted(childReply.upvotedBy) ? "default" : "outline"}
+                                  size="sm"
+                                  onClick={() => upvoteReplyMutation.mutate(childReply.id)}
+                                  disabled={upvoteReplyMutation.isPending}
+                                >
+                                  <ThumbsUp className="mr-2 h-4 w-4" />
+                                  {childReply.upvotes} Upvotes
+                                </Button>
+                                
+                                {user && (
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => handleReplyToComment(childReply)}
+                                  >
+                                    <MessageSquare className="mr-2 h-4 w-4" />
+                                    Reply
+                                  </Button>
+                                )}
+                              </CardFooter>
+                            </Card>
+                          ))}
                         </div>
-                      </CardHeader>
-                      <CardContent>
-                        <p className="whitespace-pre-wrap">{reply.content}</p>
-                      </CardContent>
-                      <CardFooter>
-                        <Button
-                          variant={hasUserUpvoted(reply.upvotedBy) ? "default" : "outline"}
-                          size="sm"
-                          onClick={() => upvoteReplyMutation.mutate(reply.id)}
-                          disabled={upvoteReplyMutation.isPending}
-                        >
-                          <ThumbsUp className="mr-2 h-4 w-4" />
-                          {reply.upvotes} Upvotes
-                        </Button>
-                      </CardFooter>
-                    </Card>
+                      )}
+                    </div>
                   ))}
                 </div>
               ) : (
