@@ -326,8 +326,8 @@ export default function NetworkingPage() {
       
       await apiRequest("POST", "/api/connection-requests", {
         recipientId,
-        message: "I'd like to connect with you!",
-        senderId: user.id
+        message: "I'd like to connect with you!"
+        // No need to send senderId as the server will use the authenticated user's ID
       });
     },
     onSuccess: () => {
@@ -336,6 +336,7 @@ export default function NetworkingPage() {
         description: "The user will be notified of your request",
       });
       queryClient.invalidateQueries({ queryKey: ["/api/connection-requests"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/invitations"] });
     },
     onError: (error: Error) => {
       toast({
@@ -358,7 +359,9 @@ export default function NetworkingPage() {
         title: "Invitation accepted",
         description: "You are now connected",
       });
+      // Invalidate both invitations and connection-requests to ensure both views are updated
       queryClient.invalidateQueries({ queryKey: ["/api/invitations"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/connection-requests"] });
     },
     onError: (error: Error) => {
       toast({
@@ -380,7 +383,9 @@ export default function NetworkingPage() {
       toast({
         title: "Invitation declined",
       });
+      // Invalidate both invitations and connection-requests to ensure both views are updated
       queryClient.invalidateQueries({ queryKey: ["/api/invitations"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/connection-requests"] });
     },
     onError: (error: Error) => {
       toast({
