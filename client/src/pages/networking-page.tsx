@@ -28,29 +28,47 @@ function UserCard({ user, onConnect, isConnecting }: UserCardProps) {
   // Get user initials for avatar fallback
   const initials = user.username.substring(0, 2).toUpperCase();
   
+  // Generate a student ID based on username (for UI display)
+  const studentId = `21${user.username.toLowerCase().substring(0, 3)}${user.id}${Math.floor(Math.random() * 1000)}`;
+  
+  // Generate a specialized field description based on user skills
+  let specialization = "Student at VIT-AP";
+  if (user.skills) {
+    const skills = Object.keys(user.skills);
+    if (skills.includes("JavaScript") || skills.includes("React") || skills.includes("Web Development")) {
+      specialization = "Software engineering student with a focus on web development.";
+    } else if (skills.includes("Python") || skills.includes("Machine Learning") || skills.includes("AI")) {
+      specialization = "Computer Science student specializing in AI and machine learning.";
+    } else if (skills.includes("Database") || skills.includes("SQL") || skills.includes("Data Science")) {
+      specialization = "Information systems student interested in database design and management.";
+    }
+  }
+  
   return (
-    <Card className="w-full max-w-[300px] hover:shadow-md transition-shadow">
+    <Card className="w-full hover:shadow-md transition-shadow bg-purple-950 text-white border-none">
       <CardContent className="pt-6 flex flex-col items-center cursor-pointer" 
         onClick={() => {
           window.location.href = `/users/${user.id}`;
         }}
       >
-        <Avatar className="h-16 w-16 mb-2">
-          <AvatarImage src={user.avatar || ""} alt={user.username} />
-          <AvatarFallback>{initials}</AvatarFallback>
-        </Avatar>
-        <h3 className="font-medium text-lg">{user.username}</h3>
-        <p className="text-sm text-muted-foreground mb-2">{user.bio || "No bio available"}</p>
+        <div className="flex justify-center mb-4">
+          <div className="bg-purple-500 w-14 h-14 rounded-full flex items-center justify-center text-white text-xl font-bold">
+            {initials}
+          </div>
+        </div>
+        
+        <h3 className="font-medium text-lg mb-1">{studentId}</h3>
+        <p className="text-sm text-gray-300 text-center mb-3 px-4">{specialization}</p>
         
         {user.skills && Object.keys(user.skills).length > 0 && (
-          <div className="flex flex-wrap gap-1 my-2 justify-center">
+          <div className="flex flex-wrap gap-1 mb-3 justify-center">
             {Object.entries(user.skills).slice(0, 3).map(([skill]) => (
-              <Badge key={skill} variant="outline" className="text-xs">
+              <Badge key={skill} variant="outline" className="text-xs bg-purple-800 text-white border-purple-600 hover:bg-purple-700">
                 {skill}
               </Badge>
             ))}
             {Object.keys(user.skills).length > 3 && (
-              <Badge variant="outline" className="text-xs">
+              <Badge variant="outline" className="text-xs bg-purple-800 text-white border-purple-600 hover:bg-purple-700">
                 +{Object.keys(user.skills).length - 3} more
               </Badge>
             )}
@@ -64,7 +82,7 @@ function UserCard({ user, onConnect, isConnecting }: UserCardProps) {
             onConnect(user.id);
           }} 
           disabled={isConnecting}
-          className="w-full"
+          className="w-full bg-purple-600 hover:bg-purple-700"
         >
           {isConnecting ? (
             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -90,6 +108,9 @@ function InvitationCard({ invitation, user, onAccept, onDecline, isResponding }:
   // Get user initials for avatar fallback
   const initials = user ? user.username.substring(0, 2).toUpperCase() : "??";
   
+  // Generate a student ID based on username (for UI display)
+  const studentId = user ? `21${user.username.toLowerCase().substring(0, 3)}${user.id}${Math.floor(Math.random() * 1000)}` : `User #${invitation.senderId}`;
+  
   const handleViewProfile = () => {
     if (user) {
       window.location.href = `/users/${invitation.senderId}`;
@@ -97,27 +118,26 @@ function InvitationCard({ invitation, user, onAccept, onDecline, isResponding }:
   };
   
   return (
-    <Card className="w-full hover:shadow-md transition-shadow">
+    <Card className="w-full hover:shadow-md transition-shadow bg-purple-950 text-white border-none">
       <CardContent className="pt-6 flex items-center">
         <div 
           className="flex items-center flex-1 cursor-pointer" 
           onClick={handleViewProfile}
         >
-          <Avatar className="h-12 w-12 mr-4">
-            <AvatarImage src={user?.avatar || ""} alt={user?.username} />
-            <AvatarFallback>{initials}</AvatarFallback>
-          </Avatar>
+          <div className="bg-purple-500 h-12 w-12 rounded-full flex items-center justify-center text-white text-lg font-bold mr-4">
+            {initials}
+          </div>
           <div>
             <h3 className="font-medium">
-              {user ? user.username : `User #${invitation.senderId}`}
+              {studentId}
             </h3>
             {invitation.projectId && (
-              <p className="text-sm text-muted-foreground">
+              <p className="text-sm text-gray-300">
                 Invited you to join their project
               </p>
             )}
             {invitation.message && (
-              <p className="text-sm mt-1">"{invitation.message}"</p>
+              <p className="text-sm mt-1 text-gray-300">"{invitation.message}"</p>
             )}
           </div>
         </div>
@@ -130,6 +150,7 @@ function InvitationCard({ invitation, user, onAccept, onDecline, isResponding }:
               onDecline(invitation.id);
             }} 
             disabled={isResponding}
+            className="bg-red-600 hover:bg-red-700"
           >
             <X className="h-4 w-4" />
           </Button>
@@ -141,6 +162,7 @@ function InvitationCard({ invitation, user, onAccept, onDecline, isResponding }:
               onAccept(invitation.id);
             }} 
             disabled={isResponding}
+            className="bg-green-600 hover:bg-green-700"
           >
             <Check className="h-4 w-4" />
           </Button>
@@ -305,101 +327,117 @@ export default function NetworkingPage() {
   return (
     <>
       <NavBar />
-      <div className="container py-8">
-        <h1 className="text-3xl font-bold mb-8">Networking</h1>
-      
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-2 mb-8">
-          <TabsTrigger value="people">People</TabsTrigger>
-          <TabsTrigger value="invitations" className="relative">
-            Invitations
-            {pendingInvitations.length > 0 && (
-              <Badge variant="destructive" className="ml-2">
-                {pendingInvitations.length}
-              </Badge>
-            )}
-          </TabsTrigger>
-        </TabsList>
+      <div className="min-h-screen bg-gray-950 text-white">
+        <div className="container py-8">
+          <h1 className="text-3xl font-bold mb-8 text-white">Networking</h1>
         
-        <TabsContent value="people">
-          <div className="mb-6">
-            <div className="flex gap-2 items-center mb-4">
-              <div className="relative flex-1">
-                <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Search for students by name or skill..."
-                  className="pl-8"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                />
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+            <TabsList className="grid w-full grid-cols-2 mb-8 bg-purple-900">
+              <TabsTrigger 
+                value="people" 
+                className="data-[state=active]:bg-purple-700 data-[state=active]:text-white text-gray-200"
+              >
+                People
+              </TabsTrigger>
+              <TabsTrigger 
+                value="invitations" 
+                className="data-[state=active]:bg-purple-700 data-[state=active]:text-white text-gray-200 relative"
+              >
+                Invitations
+                {pendingInvitations.length > 0 && (
+                  <Badge variant="destructive" className="ml-2">
+                    {pendingInvitations.length}
+                  </Badge>
+                )}
+              </TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="people">
+              <div className="mb-6">
+                <div className="flex gap-2 items-center mb-4">
+                  <div className="relative flex-1">
+                    <Search className="absolute left-2 top-2.5 h-4 w-4 text-gray-400" />
+                    <Input
+                      placeholder="Search for students by name or skill..."
+                      className="pl-8 bg-gray-900 border-gray-700 text-white"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                    />
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Button
+                      variant={searchBy === "username" ? "default" : "outline"}
+                      size="sm"
+                      className={searchBy === "username" 
+                        ? "bg-purple-600 hover:bg-purple-700 text-white" 
+                        : "text-gray-300 border-gray-600 hover:bg-gray-800"}
+                      onClick={() => setSearchBy("username")}
+                    >
+                      By Name
+                    </Button>
+                    <Button
+                      variant={searchBy === "skills" ? "default" : "outline"}
+                      size="sm"
+                      className={searchBy === "skills" 
+                        ? "bg-purple-600 hover:bg-purple-700 text-white" 
+                        : "text-gray-300 border-gray-600 hover:bg-gray-800"}
+                      onClick={() => setSearchBy("skills")}
+                    >
+                      By Skill
+                    </Button>
+                  </div>
+                </div>
               </div>
-              <div className="flex items-center space-x-2">
-                <Button
-                  variant={searchBy === "username" ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setSearchBy("username")}
-                >
-                  By Name
-                </Button>
-                <Button
-                  variant={searchBy === "skills" ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setSearchBy("skills")}
-                >
-                  By Skill
-                </Button>
+              
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+                {isLoadingUsers ? (
+                  <div className="col-span-full flex justify-center py-12">
+                    <Loader2 className="h-8 w-8 animate-spin text-purple-500" />
+                  </div>
+                ) : filteredUsers.length === 0 ? (
+                  <div className="col-span-full text-center py-12 text-gray-400">
+                    {searchQuery ? "No users matching your search" : "No users found"}
+                  </div>
+                ) : (
+                  filteredUsers.map(otherUser => (
+                    <UserCard
+                      key={otherUser.id}
+                      user={otherUser}
+                      onConnect={(userId) => connectMutation.mutate(userId)}
+                      isConnecting={connectMutation.isPending}
+                    />
+                  ))
+                )}
               </div>
-            </div>
-          </div>
-          
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-            {isLoadingUsers ? (
-              <div className="col-span-full flex justify-center py-12">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            </TabsContent>
+            
+            <TabsContent value="invitations">
+              <div className="space-y-4">
+                {isLoadingInvitations ? (
+                  <div className="flex justify-center py-12">
+                    <Loader2 className="h-8 w-8 animate-spin text-purple-500" />
+                  </div>
+                ) : pendingInvitations.length === 0 ? (
+                  <div className="text-center py-12 text-gray-400">
+                    No pending invitations
+                  </div>
+                ) : (
+                  pendingInvitations.map(invitation => (
+                    <InvitationCard
+                      key={invitation.id}
+                      invitation={invitation}
+                      user={findUserById(invitation.senderId)}
+                      onAccept={(id) => acceptMutation.mutate(id)}
+                      onDecline={(id) => declineMutation.mutate(id)}
+                      isResponding={acceptMutation.isPending || declineMutation.isPending}
+                    />
+                  ))
+                )}
               </div>
-            ) : filteredUsers.length === 0 ? (
-              <div className="col-span-full text-center py-12 text-muted-foreground">
-                {searchQuery ? "No users matching your search" : "No users found"}
-              </div>
-            ) : (
-              filteredUsers.map(otherUser => (
-                <UserCard
-                  key={otherUser.id}
-                  user={otherUser}
-                  onConnect={(userId) => connectMutation.mutate(userId)}
-                  isConnecting={connectMutation.isPending}
-                />
-              ))
-            )}
-          </div>
-        </TabsContent>
-        
-        <TabsContent value="invitations">
-          <div className="space-y-4">
-            {isLoadingInvitations ? (
-              <div className="flex justify-center py-12">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
-              </div>
-            ) : pendingInvitations.length === 0 ? (
-              <div className="text-center py-12 text-muted-foreground">
-                No pending invitations
-              </div>
-            ) : (
-              pendingInvitations.map(invitation => (
-                <InvitationCard
-                  key={invitation.id}
-                  invitation={invitation}
-                  user={findUserById(invitation.senderId)}
-                  onAccept={(id) => acceptMutation.mutate(id)}
-                  onDecline={(id) => declineMutation.mutate(id)}
-                  isResponding={acceptMutation.isPending || declineMutation.isPending}
-                />
-              ))
-            )}
-          </div>
-        </TabsContent>
-      </Tabs>
-    </div>
+            </TabsContent>
+          </Tabs>
+        </div>
+      </div>
     </>
   );
 }
