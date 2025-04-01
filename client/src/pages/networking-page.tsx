@@ -114,7 +114,7 @@ function MessageCard({ message, sender, receiver, currentUserId }: MessageCardPr
   
   // Generate a student ID based on username (for UI display)
   const studentId = otherUser ? 
-    `21${otherUser.username.toLowerCase().substring(0, 3)}${otherUser.id}${Math.floor(Math.random() * 1000)}` 
+    `${otherUser.username}` 
     : `User #${isMyMessage ? message.recipientId : message.senderId}`;
   
   // Format timestamp
@@ -127,31 +127,33 @@ function MessageCard({ message, sender, receiver, currentUserId }: MessageCardPr
   };
   
   return (
-    <Card className={`w-full hover:shadow-md transition-shadow bg-purple-950 text-white border-none mb-2`}>
-      <CardContent className="pt-4 pb-4">
-        <div className="flex items-start gap-3">
-          <div 
-            className="cursor-pointer" 
-            onClick={handleViewProfile}
-          >
-            <div className="bg-purple-500 h-10 w-10 rounded-full flex items-center justify-center text-white text-lg font-bold">
-              {initials}
-            </div>
-          </div>
-          <div className="flex-1">
-            <div className="flex justify-between items-center mb-1">
-              <h3 className="text-sm font-medium cursor-pointer hover:underline" onClick={handleViewProfile}>
-                {studentId}
-              </h3>
-              <span className="text-xs text-gray-400">{timestamp}</span>
-            </div>
-            <p className="text-sm text-gray-200 bg-purple-900 p-2 rounded-md">
-              {message.content}
-            </p>
+    <div className={`flex items-start mb-4 ${isMyMessage ? 'justify-end' : 'justify-start'}`}>
+      {!isMyMessage && (
+        <div 
+          className="cursor-pointer mr-2" 
+          onClick={handleViewProfile}
+        >
+          <div className="bg-purple-600 h-10 w-10 rounded-full flex items-center justify-center text-white text-base font-semibold">
+            {initials}
           </div>
         </div>
-      </CardContent>
-    </Card>
+      )}
+      <div className={`max-w-[70%]`}>
+        {!isMyMessage && (
+          <div className="mb-1">
+            <span className="font-medium text-sm text-white cursor-pointer hover:underline" onClick={handleViewProfile}>
+              {studentId}
+            </span>
+          </div>
+        )}
+        <div className={`rounded-2xl px-3 py-2 ${isMyMessage ? 'bg-purple-700 text-white rounded-br-none' : 'bg-gray-800 text-white rounded-bl-none'}`}>
+          <p className="text-sm">{message.content}</p>
+        </div>
+        <div className="mt-1">
+          <span className="text-xs text-gray-400">{timestamp}</span>
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -167,8 +169,8 @@ function InvitationCard({ invitation, user, onAccept, onDecline, isResponding }:
   // Get user initials for avatar fallback
   const initials = user ? user.username.substring(0, 2).toUpperCase() : "??";
   
-  // Generate a student ID based on username (for UI display)
-  const studentId = user ? `21${user.username.toLowerCase().substring(0, 3)}${user.id}${Math.floor(Math.random() * 1000)}` : `User #${invitation.senderId}`;
+  // Use the actual username
+  const username = user ? user.username : `User #${invitation.senderId}`;
   
   const handleViewProfile = () => {
     if (user) {
@@ -177,57 +179,57 @@ function InvitationCard({ invitation, user, onAccept, onDecline, isResponding }:
   };
   
   return (
-    <Card className="w-full hover:shadow-md transition-shadow bg-purple-950 text-white border-none">
-      <CardContent className="pt-6 flex items-center">
+    <div className="bg-gray-900 rounded-lg p-4 mb-4">
+      <div className="flex items-center">
         <div 
-          className="flex items-center flex-1 cursor-pointer" 
+          className="cursor-pointer" 
           onClick={handleViewProfile}
         >
-          <div className="bg-purple-500 h-12 w-12 rounded-full flex items-center justify-center text-white text-lg font-bold mr-4">
+          <div className="bg-purple-600 h-12 w-12 rounded-full flex items-center justify-center text-white text-lg font-bold">
             {initials}
           </div>
-          <div>
-            <h3 className="font-medium">
-              {studentId}
+        </div>
+        <div className="ml-4 flex-1">
+          <div className="flex items-center">
+            <h3 className="font-medium text-white cursor-pointer hover:underline" onClick={handleViewProfile}>
+              {username}
             </h3>
-            {invitation.projectId && (
-              <p className="text-sm text-gray-300">
-                Invited you to join their project
-              </p>
-            )}
-            {invitation.message && (
-              <p className="text-sm mt-1 text-gray-300">"{invitation.message}"</p>
-            )}
+            <span className="text-gray-400 text-sm ml-2">wants to connect with you</span>
+          </div>
+          
+          {invitation.message && (
+            <p className="text-sm mt-1 text-gray-300 italic">"{invitation.message}"</p>
+          )}
+          
+          <div className="mt-2 flex gap-2">
+            <Button 
+              size="sm" 
+              variant="destructive" 
+              onClick={(e) => {
+                e.stopPropagation();
+                onDecline(invitation.id);
+              }} 
+              disabled={isResponding}
+              className="bg-transparent border border-gray-600 hover:bg-gray-800 text-gray-300"
+            >
+              Decline
+            </Button>
+            <Button 
+              size="sm" 
+              variant="default" 
+              onClick={(e) => {
+                e.stopPropagation();
+                onAccept(invitation.id);
+              }} 
+              disabled={isResponding}
+              className="bg-purple-600 hover:bg-purple-700 text-white"
+            >
+              Accept
+            </Button>
           </div>
         </div>
-        <div className="flex gap-2">
-          <Button 
-            size="sm" 
-            variant="destructive" 
-            onClick={(e) => {
-              e.stopPropagation();
-              onDecline(invitation.id);
-            }} 
-            disabled={isResponding}
-            className="bg-red-600 hover:bg-red-700"
-          >
-            <X className="h-4 w-4" />
-          </Button>
-          <Button 
-            size="sm" 
-            variant="default" 
-            onClick={(e) => {
-              e.stopPropagation();
-              onAccept(invitation.id);
-            }} 
-            disabled={isResponding}
-            className="bg-green-600 hover:bg-green-700"
-          >
-            <Check className="h-4 w-4" />
-          </Button>
-        </div>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }
 
@@ -320,9 +322,12 @@ export default function NetworkingPage() {
   // Create connection request mutation
   const connectMutation = useMutation({
     mutationFn: async (recipientId: number) => {
+      if (!user) throw new Error("You must be logged in to send connection requests");
+      
       await apiRequest("POST", "/api/connection-requests", {
         recipientId,
-        message: "I'd like to connect with you!"
+        message: "I'd like to connect with you!",
+        senderId: user.id
       });
     },
     onSuccess: () => {
@@ -549,12 +554,17 @@ export default function NetworkingPage() {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 {/* User list */}
                 <div className="bg-gray-900 rounded-lg p-4">
-                  <h3 className="text-lg font-medium mb-4 text-gray-200">Connections</h3>
+                  <h3 className="text-lg font-medium mb-4 text-gray-200">Messages</h3>
                   
                   <div className="space-y-2 max-h-[500px] overflow-y-auto pr-2">
                     {users.filter(u => u.id !== user?.id).map(otherUser => {
                       const isSelected = selectedUserId === otherUser.id;
                       const initials = otherUser.username.substring(0, 2).toUpperCase();
+                      
+                      // Count unread messages from this user
+                      const unreadCount = messages.filter(
+                        m => m.senderId === otherUser.id && !m.read
+                      ).length;
                       
                       return (
                         <div 
@@ -564,11 +574,23 @@ export default function NetworkingPage() {
                           }`}
                           onClick={() => setSelectedUserId(otherUser.id)}
                         >
-                          <div className="bg-purple-600 h-10 w-10 rounded-full flex items-center justify-center text-white text-lg font-bold mr-3">
-                            {initials}
+                          <div className="relative">
+                            <div className="bg-purple-600 h-10 w-10 rounded-full flex items-center justify-center text-white text-lg font-bold mr-3">
+                              {initials}
+                            </div>
+                            {unreadCount > 0 && (
+                              <div className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                                {unreadCount}
+                              </div>
+                            )}
                           </div>
-                          <div>
-                            <h4 className="font-medium text-sm text-white">{otherUser.username}</h4>
+                          <div className="flex-1">
+                            <div className="flex justify-between items-center">
+                              <h4 className="font-medium text-sm text-white">{otherUser.username}</h4>
+                              {unreadCount > 0 && (
+                                <div className="w-2 h-2 rounded-full bg-blue-500 ml-2"></div>
+                              )}
+                            </div>
                             <p className="text-xs text-gray-400">
                               {otherUser.bio?.substring(0, 20) || "No bio"}
                               {otherUser.bio && otherUser.bio.length > 20 ? "..." : ""}

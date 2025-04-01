@@ -265,6 +265,18 @@ export class TestStorage implements IStorage {
         (m.senderId === user2Id && m.receiverId === user1Id)
     ).sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
   }
+  
+  async getAllMessages(): Promise<Message[]> {
+    return this.messages;
+  }
+
+  async markMessageAsRead(messageId: number): Promise<Message | undefined> {
+    const index = this.messages.findIndex(msg => msg.id === messageId);
+    if (index === -1) return undefined;
+    
+    this.messages[index] = { ...this.messages[index], read: true };
+    return this.messages[index];
+  }
 
   async createChatGroup(group: Omit<ChatGroup, "id" | "createdAt">): Promise<ChatGroup> {
     const newGroup: ChatGroup = {

@@ -58,6 +58,8 @@ export interface IStorage {
   // Messages
   createMessage(message: Omit<Message, "id" | "createdAt">): Promise<Message>;
   getMessagesBetweenUsers(user1Id: number, user2Id: number): Promise<Message[]>;
+  getAllMessages(): Promise<Message[]>;
+  markMessageAsRead(messageId: number): Promise<Message | undefined>;
   
   // Chat Groups
   createChatGroup(group: Omit<ChatGroup, "id" | "createdAt">): Promise<ChatGroup>;
@@ -469,6 +471,18 @@ export class MemStorage implements IStorage {
         (msg.senderId === user1Id && msg.recipientId === user2Id) ||
         (msg.senderId === user2Id && msg.recipientId === user1Id)
     ).sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+  }
+  
+  async getAllMessages(): Promise<Message[]> {
+    return this.messages;
+  }
+  
+  async markMessageAsRead(messageId: number): Promise<Message | undefined> {
+    const index = this.messages.findIndex(msg => msg.id === messageId);
+    if (index === -1) return undefined;
+    
+    this.messages[index] = { ...this.messages[index], read: true };
+    return this.messages[index];
   }
 
   // Create a chat group

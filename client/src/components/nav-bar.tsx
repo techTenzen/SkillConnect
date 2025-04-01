@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useLocation } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
@@ -16,7 +16,8 @@ import {
   MessageSquare, 
   LogOut, 
   Send, 
-  X
+  X,
+  Bell
 } from "lucide-react";
 import {
   Dialog,
@@ -29,9 +30,10 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Loader2 } from "lucide-react";
-import { useMutation } from "@tanstack/react-query";
-import { apiRequest } from "@/lib/queryClient";
+import { useMutation, useQuery } from "@tanstack/react-query";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { Badge } from "@/components/ui/badge"; 
 
 export default function NavBar() {
   const [location] = useLocation();
@@ -46,6 +48,49 @@ export default function NavBar() {
       content: "Hello! I'm your AI assistant. How can I help you with your academic projects or finding collaborators?"
     }
   ]);
+  
+  // Get pending invitations for notification badge
+  const { data: invitations = [] } = useQuery({
+    queryKey: ["/api/invitations"],
+    queryFn: async () => {
+      if (!user) return [];
+      try {
+        const response = await apiRequest("GET", "/api/invitations");
+        const data = await response.json();
+        return Array.isArray(data) ? data : [];
+      } catch (error) {
+        console.error("Error fetching invitations:", error);
+        return [];
+      }
+    },
+    enabled: !!user,
+  });
+  
+  // Get unread messages for notification badge
+  const { data: unreadMessages = [] } = useQuery({
+    queryKey: ["/api/messages/unread"],
+    queryFn: async () => {
+      if (!user) return [];
+      try {
+        const response = await apiRequest("GET", "/api/messages/unread");
+        const data = await response.json();
+        return Array.isArray(data) ? data : [];
+      } catch (error) {
+        console.error("Error fetching unread messages:", error);
+        return [];
+      }
+    },
+    enabled: !!user,
+    // Poll for new messages every 15 seconds
+    refetchInterval: 15000,
+  });
+  
+  // Calculate pending notifications
+  const pendingInvitations = invitations.filter(
+    inv => inv.recipientId === user?.id && inv.status === "pending"
+  ).length;
+  
+  const unreadMessageCount = unreadMessages.length;
 
   const sendMessageMutation = useMutation({
     mutationFn: async (message: string) => {
@@ -120,20 +165,33 @@ export default function NavBar() {
       <nav className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="flex h-14 items-center px-4">
           <div className="flex items-center space-x-4 lg:space-x-6">
-            {navItems.map(({ path, label, icon: Icon }) => (
-              <Link key={path} href={path}>
-                <div
-                  className={`flex items-center space-x-2 text-sm font-medium transition-colors hover:text-primary cursor-pointer ${
-                    location === path
-                      ? "text-primary"
-                      : "text-muted-foreground"
-                  }`}
-                >
-                  <Icon className="h-4 w-4" />
-                  <span>{label}</span>
-                </div>
-              </Link>
-            ))}
+            {navItems.map(({ path, label, icon: Icon }) => {
+              // Add notification badges to the Network link
+              const hasNetworkNotifications = path === "/networking" && (pendingInvitations > 0 || unreadMessageCount > 0);
+              const totalNotifications = pendingInvitations + unreadMessageCount;
+              
+              return (
+                <Link key={path} href={path}>
+                  <div
+                    className={`flex items-center space-x-2 text-sm font-medium transition-colors hover:text-primary cursor-pointer ${
+                      location === path
+                        ? "text-primary"
+                        : "text-muted-foreground"
+                    }`}
+                  >
+                    <div className="relative">
+                      <Icon className="h-4 w-4" />
+                      {hasNetworkNotifications && (
+                        <div className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center">
+                          {totalNotifications}
+                        </div>
+                      )}
+                    </div>
+                    <span>{label}</span>
+                  </div>
+                </Link>
+              );
+            })}
           </div>
 
           <div className="ml-auto flex items-center space-x-4">
@@ -154,18 +212,40 @@ export default function NavBar() {
                   variant="ghost"
                   className="relative h-8 w-8 rounded-full"
                 >
-                  <Avatar className="h-8 w-8">
-                    <AvatarImage src={user?.avatar || undefined} alt={user?.username || 'User'} />
-                    <AvatarFallback>
-                      {user?.username?.charAt(0).toUpperCase() || 'U'}
-                    </AvatarFallback>
-                  </Avatar>
+                  <div className="relative">
+                    <Avatar className="h-8 w-8">
+                      <AvatarImage src={user?.avatar || undefined} alt={user?.username || 'User'} />
+                      <AvatarFallback>
+                        {user?.username?.charAt(0).toUpperCase() || 'U'}
+                      </AvatarFallback>
+                    </Avatar>
+                    {(pendingInvitations > 0 || unreadMessageCount > 0) && (
+                      <div className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center">
+                        {pendingInvitations + unreadMessageCount}
+                      </div>
+                    )}
+                  </div>
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
                 <Link href="/profile">
                   <DropdownMenuItem className="cursor-pointer">
                     Profile
+                  </DropdownMenuItem>
+                </Link>
+                <Link href="/networking">
+                  <DropdownMenuItem className="cursor-pointer">
+                    <div className="flex items-center justify-between w-full">
+                      <div className="flex items-center">
+                        <Users className="mr-2 h-4 w-4" />
+                        <span>Networking</span>
+                      </div>
+                      {(pendingInvitations > 0 || unreadMessageCount > 0) && (
+                        <Badge variant="destructive" className="ml-2">
+                          {pendingInvitations + unreadMessageCount}
+                        </Badge>
+                      )}
+                    </div>
                   </DropdownMenuItem>
                 </Link>
                 <DropdownMenuItem

@@ -370,10 +370,11 @@ export function registerRoutes(app: Express): Server {
       // Ensure message is not undefined
       const message = validated.message || null;
       
+      // Always use the authenticated user's ID to ensure security
       const request = await storage.createConnectionRequest({
         recipientId: validated.recipientId,
         message: message,
-        senderId: req.user.id,
+        senderId: req.user.id, // Use authenticated user's ID from session
       });
       
       res.status(201).json(request);
@@ -400,11 +401,35 @@ export function registerRoutes(app: Express): Server {
   });
   
   // Direct Messaging Routes
+  app.get("/api/messages/unread", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    
+    try {
+      const allMessages = await storage.getAllMessages();
+      // Filter messages where the current user is the recipient and message is unread
+      const unreadMessages = allMessages.filter(
+        msg => msg.recipientId === req.user.id && !msg.read
+      );
+      res.json(unreadMessages);
+    } catch (error) {
+      console.error("Error fetching unread messages:", error);
+      res.status(500).json({ error: "Failed to fetch unread messages" });
+    }
+  });
+  
   app.get("/api/messages/:userId", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     
     const otherUserId = parseInt(req.params.userId);
     const messages = await storage.getMessagesBetweenUsers(req.user.id, otherUserId);
+    
+    // Mark all messages from the other user as read
+    for (const message of messages) {
+      if (message.senderId === otherUserId && message.recipientId === req.user.id && !message.read) {
+        await storage.markMessageAsRead(message.id);
+      }
+    }
+    
     res.json(messages);
   });
   
