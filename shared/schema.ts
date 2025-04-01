@@ -10,6 +10,7 @@ export const users = pgTable("users", {
   avatar: text("avatar"),
   skills: jsonb("skills").$type<Record<string, number>>(),
   social: jsonb("social").$type<{github?: string, linkedin?: string}>(),
+  connections: jsonb("connections").$type<number[]>().default([]),
 });
 
 export const projects = pgTable("projects", {
@@ -61,6 +62,41 @@ export const invitations = pgTable("invitations", {
   createdAt: text("created_at").notNull(),
 });
 
+export const connectionRequests = pgTable("connection_requests", {
+  id: serial("id").primaryKey(),
+  senderId: integer("sender_id").notNull(),
+  recipientId: integer("recipient_id").notNull(),
+  status: text("status").notNull().default("pending"), // pending, accepted, declined
+  message: text("message"),
+  createdAt: text("created_at").notNull(),
+});
+
+export const messages = pgTable("messages", {
+  id: serial("id").primaryKey(),
+  senderId: integer("sender_id").notNull(),
+  recipientId: integer("recipient_id").notNull(),
+  content: text("content").notNull(),
+  createdAt: text("created_at").notNull(),
+  read: boolean("read").notNull().default(false),
+});
+
+export const chatGroups = pgTable("chat_groups", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  creatorId: integer("creator_id").notNull(),
+  members: jsonb("members").$type<number[]>(),
+  createdAt: text("created_at").notNull(),
+});
+
+export const groupMessages = pgTable("group_messages", {
+  id: serial("id").primaryKey(),
+  groupId: integer("group_id").notNull(),
+  senderId: integer("sender_id").notNull(),
+  content: text("content").notNull(),
+  createdAt: text("created_at").notNull(),
+  readBy: jsonb("read_by").$type<number[]>().default([]),
+});
+
 export const insertUserSchema = createInsertSchema(users).pick({
   username: true,
   password: true,
@@ -99,11 +135,40 @@ export const insertInvitationSchema = createInsertSchema(invitations).pick({
   message: true,
 });
 
+export const insertConnectionRequestSchema = createInsertSchema(connectionRequests).pick({
+  recipientId: true,
+  message: true,
+});
+
+export const insertMessageSchema = createInsertSchema(messages).pick({
+  recipientId: true,
+  content: true,
+});
+
+export const insertChatGroupSchema = createInsertSchema(chatGroups).pick({
+  name: true,
+  members: true,
+});
+
+export const insertGroupMessageSchema = createInsertSchema(groupMessages).pick({
+  groupId: true,
+  content: true,
+});
+
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type InsertReply = z.infer<typeof insertReplySchema>;
 export type InsertInvitation = z.infer<typeof insertInvitationSchema>;
+export type InsertConnectionRequest = z.infer<typeof insertConnectionRequestSchema>;
+export type InsertMessage = z.infer<typeof insertMessageSchema>;
+export type InsertChatGroup = z.infer<typeof insertChatGroupSchema>;
+export type InsertGroupMessage = z.infer<typeof insertGroupMessageSchema>;
+
 export type User = typeof users.$inferSelect;
 export type Project = typeof projects.$inferSelect;
 export type Discussion = typeof discussions.$inferSelect;
 export type Reply = typeof replies.$inferSelect;
 export type Invitation = typeof invitations.$inferSelect;
+export type ConnectionRequest = typeof connectionRequests.$inferSelect;
+export type Message = typeof messages.$inferSelect;
+export type ChatGroup = typeof chatGroups.$inferSelect;
+export type GroupMessage = typeof groupMessages.$inferSelect;

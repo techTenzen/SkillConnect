@@ -50,19 +50,8 @@ export function registerRoutes(app: Express): Server {
 
     try {
       const validated = insertProjectSchema.parse(req.body);
-      // Ensure skills is an array
-      const skills = Array.isArray(validated.skills) ? validated.skills : (validated.skills ? [validated.skills.toString()] : []);
-      
       const project = await storage.createProject({
-        title: validated.title,
-        description: validated.description,
-        skills: skills,
-        tools: validated.tools || null,
-        rolesSought: validated.rolesSought || null,
-        setting: validated.setting,
-        location: validated.location || null,
-        deadline: validated.deadline || null,
-        membersNeeded: validated.membersNeeded || null,
+        ...validated,
         ownerId: req.user.id,
         members: [req.user.id],
         joinRequests: [],
@@ -183,7 +172,6 @@ export function registerRoutes(app: Express): Server {
         upvotes: 0,
         upvotedBy: [],
         createdAt: new Date().toISOString(),
-        parentReplyId: validated.parentReplyId || null,
       });
       
       res.status(201).json(reply);
@@ -274,9 +262,7 @@ export function registerRoutes(app: Express): Server {
       
       // Add the sender ID and set status and created date
       const invitation = await storage.createInvitation({
-        recipientId: validated.recipientId,
-        projectId: validated.projectId,
-        message: validated.message ?? null,
+        ...validated,
         senderId: req.user.id,
       });
       
@@ -347,13 +333,9 @@ export function registerRoutes(app: Express): Server {
       if (alreadySent) {
         return res.status(400).json({ message: "Connection request already exists between these users" });
       }
-
-      // Ensure message is not undefined
-      const message = validated.message || null;
       
       const request = await storage.createConnectionRequest({
-        recipientId: validated.recipientId,
-        message: message,
+        ...validated,
         senderId: req.user.id,
       });
       
@@ -424,8 +406,7 @@ export function registerRoutes(app: Express): Server {
     const group = await storage.getChatGroup(groupId);
     
     if (!group) return res.sendStatus(404);
-    const members = group.members || [];
-    if (!members.includes(req.user.id)) return res.sendStatus(403);
+    if (!group.members.includes(req.user.id)) return res.sendStatus(403);
     
     res.json(group);
   });
@@ -437,8 +418,7 @@ export function registerRoutes(app: Express): Server {
       const validated = insertChatGroupSchema.parse(req.body);
       
       // Ensure the creator is included in the members
-      const memberArray = validated.members || [];
-      const memberIds = Array.from(new Set([...memberArray, req.user.id]));
+      const memberIds = [...new Set([...(validated.members || []), req.user.id])];
       
       const group = await storage.createChatGroup({
         ...validated,
@@ -495,8 +475,7 @@ export function registerRoutes(app: Express): Server {
     const group = await storage.getChatGroup(groupId);
     
     if (!group) return res.sendStatus(404);
-    const members = group.members || [];
-    if (!members.includes(req.user.id)) return res.sendStatus(403);
+    if (!group.members.includes(req.user.id)) return res.sendStatus(403);
     
     const messages = await storage.getMessagesByChatGroup(groupId);
     res.json(messages);
@@ -509,8 +488,7 @@ export function registerRoutes(app: Express): Server {
     const group = await storage.getChatGroup(groupId);
     
     if (!group) return res.sendStatus(404);
-    const members = group.members || [];
-    if (!members.includes(req.user.id)) return res.sendStatus(403);
+    if (!group.members.includes(req.user.id)) return res.sendStatus(403);
     
     try {
       const validated = insertGroupMessageSchema.parse(req.body);
@@ -580,7 +558,7 @@ export function registerRoutes(app: Express): Server {
           }));
           
           // Send to recipient if they are connected
-          const recipientWs = clients.get(data.recipientId) as ExtendedWebSocket;
+          const recipientWs = clients.get(data.recipientId);
           if (recipientWs && recipientWs.readyState === WebSocket.OPEN) {
             recipientWs.send(JSON.stringify({
               type: 'direct-message',

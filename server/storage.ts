@@ -1,8 +1,15 @@
 import { 
   InsertUser, User, Project, Discussion, 
-  Reply, InsertReply, Invitation, InsertInvitation
+  Reply, InsertReply, Invitation, InsertInvitation,
+  ConnectionRequest, InsertConnectionRequest,
+  Message, InsertMessage,
+  ChatGroup, InsertChatGroup,
+  GroupMessage, InsertGroupMessage
 } from "@shared/schema";
-import { users, projects, discussions, replies, invitations } from "@shared/schema";
+import { 
+  users, projects, discussions, replies, invitations,
+  connectionRequests, messages, chatGroups, groupMessages
+} from "@shared/schema";
 import session from "express-session";
 import createMemoryStore from "memorystore";
 
@@ -42,6 +49,26 @@ export interface IStorage {
   createInvitation(invitation: Omit<Invitation, "id" | "senderId" | "status" | "createdAt">): Promise<Invitation>;
   getInvitationsByUser(userId: number): Promise<Invitation[]>;
   respondToInvitation(id: number, status: "accepted" | "declined"): Promise<Invitation | undefined>;
+  
+  // Connection Requests
+  createConnectionRequest(request: Omit<ConnectionRequest, "id" | "status" | "createdAt">): Promise<ConnectionRequest>;
+  getConnectionRequestsByUser(userId: number): Promise<ConnectionRequest[]>;
+  respondToConnectionRequest(id: number, status: "accepted" | "declined"): Promise<ConnectionRequest | undefined>;
+  
+  // Messages
+  createMessage(message: Omit<Message, "id" | "createdAt">): Promise<Message>;
+  getMessagesBetweenUsers(user1Id: number, user2Id: number): Promise<Message[]>;
+  
+  // Chat Groups
+  createChatGroup(group: Omit<ChatGroup, "id" | "createdAt">): Promise<ChatGroup>;
+  getChatGroupsByUser(userId: number): Promise<ChatGroup[]>;
+  getChatGroup(id: number): Promise<ChatGroup | undefined>;
+  addUserToChatGroup(groupId: number, userId: number): Promise<ChatGroup | undefined>;
+  removeUserFromChatGroup(groupId: number, userId: number): Promise<ChatGroup | undefined>;
+  
+  // Group Messages
+  createGroupMessage(message: Omit<GroupMessage, "id" | "createdAt">): Promise<GroupMessage>;
+  getMessagesByChatGroup(groupId: number): Promise<GroupMessage[]>;
 }
 
 export class MemStorage implements IStorage {
@@ -51,12 +78,20 @@ export class MemStorage implements IStorage {
   private discussions: Discussion[] = [];
   private replies: Reply[] = [];
   private invitations: Invitation[] = [];
+  private connectionRequests: ConnectionRequest[] = [];
+  private messages: Message[] = [];
+  private chatGroups: ChatGroup[] = [];
+  private groupMessages: GroupMessage[] = [];
   private nextId = {
     users: 1,
     projects: 1,
     discussions: 1,
     replies: 1,
     invitations: 1,
+    connectionRequests: 1,
+    messages: 1,
+    chatGroups: 1,
+    groupMessages: 1,
   };
 
   constructor() {
@@ -79,7 +114,8 @@ export class MemStorage implements IStorage {
           "Machine Learning": 4,
           "Data Analysis": 3
         },
-        social: { github: "github.com/user1", linkedin: "linkedin.com/in/user1" }
+        social: { github: "github.com/user1", linkedin: "linkedin.com/in/user1" },
+        connections: []
       },
       {
         id: 2,
@@ -93,7 +129,8 @@ export class MemStorage implements IStorage {
           "Node.js": 4,
           "UI/UX Design": 3
         },
-        social: { github: "github.com/user2", linkedin: "linkedin.com/in/user2" }
+        social: { github: "github.com/user2", linkedin: "linkedin.com/in/user2" },
+        connections: []
       },
       {
         id: 3,
@@ -107,7 +144,8 @@ export class MemStorage implements IStorage {
           "Python": 3,
           "Data Analysis": 4
         },
-        social: { github: "github.com/user3", linkedin: "linkedin.com/in/user3" }
+        social: { github: "github.com/user3", linkedin: "linkedin.com/in/user3" },
+        connections: []
       }
     ];
     this.nextId.users = 4;
@@ -236,7 +274,8 @@ export class MemStorage implements IStorage {
         { 
           github: typeof insertUser.social.github === 'string' ? insertUser.social.github : undefined,
           linkedin: typeof insertUser.social.linkedin === 'string' ? insertUser.social.linkedin : undefined
-        } : emptySocial
+        } : emptySocial,
+      connections: []
     };
     this.users.push(newUser);
     return newUser;
@@ -485,6 +524,171 @@ export class MemStorage implements IStorage {
     }
     
     return this.invitations[index];
+  }
+
+  // Create a connection request
+  async createConnectionRequest(request: Omit<ConnectionRequest, "id" | "status" | "createdAt">): Promise<ConnectionRequest> {
+    const fullRequest: ConnectionRequest = {
+      ...request,
+      id: this.nextId.connectionRequests++,
+      status: "pending",
+      createdAt: new Date().toISOString(),
+    };
+    
+    this.connectionRequests.push(fullRequest);
+    return fullRequest;
+  }
+
+  // Get connection requests for a user (both sent and received)
+  async getConnectionRequestsByUser(userId: number): Promise<ConnectionRequest[]> {
+    return this.connectionRequests.filter(
+      req => req.recipientId === userId || req.senderId === userId
+    );
+  }
+
+  // Respond to a connection request (accept or decline)
+  async respondToConnectionRequest(id: number, status: "accepted" | "declined"): Promise<ConnectionRequest | undefined> {
+    const index = this.connectionRequests.findIndex(req => req.id === id);
+    if (index === -1) return undefined;
+    
+    this.connectionRequests[index] = { ...this.connectionRequests[index], status };
+    
+    // If accepted, add users to each other's connections
+    if (status === "accepted") {
+      const request = this.connectionRequests[index];
+      const sender = await this.getUser(request.senderId);
+      const recipient = await this.getUser(request.recipientId);
+      
+      if (sender && recipient) {
+        // Add recipient to sender's connections if not already there
+        if (!sender.connections?.includes(request.recipientId)) {
+          await this.updateUser(sender.id, {
+            connections: [...(sender.connections || []), request.recipientId]
+          });
+        }
+        
+        // Add sender to recipient's connections if not already there
+        if (!recipient.connections?.includes(request.senderId)) {
+          await this.updateUser(recipient.id, {
+            connections: [...(recipient.connections || []), request.senderId]
+          });
+        }
+      }
+    }
+    
+    return this.connectionRequests[index];
+  }
+
+  // Create a message between users
+  async createMessage(message: Omit<Message, "id" | "createdAt">): Promise<Message> {
+    const newMessage: Message = {
+      ...message,
+      id: this.nextId.messages++,
+      createdAt: new Date().toISOString(),
+    };
+    
+    this.messages.push(newMessage);
+    return newMessage;
+  }
+
+  // Get messages between two users
+  async getMessagesBetweenUsers(user1Id: number, user2Id: number): Promise<Message[]> {
+    return this.messages.filter(
+      msg => 
+        (msg.senderId === user1Id && msg.recipientId === user2Id) ||
+        (msg.senderId === user2Id && msg.recipientId === user1Id)
+    ).sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+  }
+
+  // Create a chat group
+  async createChatGroup(group: Omit<ChatGroup, "id" | "createdAt">): Promise<ChatGroup> {
+    const newGroup: ChatGroup = {
+      ...group,
+      id: this.nextId.chatGroups++,
+      createdAt: new Date().toISOString(),
+    };
+    
+    this.chatGroups.push(newGroup);
+    return newGroup;
+  }
+
+  // Get chat groups that a user is a member of
+  async getChatGroupsByUser(userId: number): Promise<ChatGroup[]> {
+    return this.chatGroups.filter(
+      group => (group.members || []).includes(userId)
+    );
+  }
+
+  // Get a chat group by ID
+  async getChatGroup(id: number): Promise<ChatGroup | undefined> {
+    return this.chatGroups.find(group => group.id === id);
+  }
+
+  // Add a user to a chat group
+  async addUserToChatGroup(groupId: number, userId: number): Promise<ChatGroup | undefined> {
+    const group = await this.getChatGroup(groupId);
+    if (!group) return undefined;
+    
+    const members = group.members || [];
+    
+    // Check if user is already in the group
+    if (members.includes(userId)) {
+      return group;
+    }
+    
+    // Add user to the group
+    const updatedGroup = {
+      ...group,
+      members: [...members, userId]
+    };
+    
+    const index = this.chatGroups.findIndex(g => g.id === groupId);
+    this.chatGroups[index] = updatedGroup;
+    
+    return updatedGroup;
+  }
+
+  // Remove a user from a chat group
+  async removeUserFromChatGroup(groupId: number, userId: number): Promise<ChatGroup | undefined> {
+    const group = await this.getChatGroup(groupId);
+    if (!group) return undefined;
+    
+    const members = group.members || [];
+    
+    // Check if user is in the group
+    if (!members.includes(userId)) {
+      return group;
+    }
+    
+    // Remove user from the group
+    const updatedGroup = {
+      ...group,
+      members: members.filter((id: number) => id !== userId)
+    };
+    
+    const index = this.chatGroups.findIndex(g => g.id === groupId);
+    this.chatGroups[index] = updatedGroup;
+    
+    return updatedGroup;
+  }
+
+  // Create a message in a chat group
+  async createGroupMessage(message: Omit<GroupMessage, "id" | "createdAt">): Promise<GroupMessage> {
+    const newMessage: GroupMessage = {
+      ...message,
+      id: this.nextId.groupMessages++,
+      createdAt: new Date().toISOString(),
+    };
+    
+    this.groupMessages.push(newMessage);
+    return newMessage;
+  }
+
+  // Get messages for a chat group
+  async getMessagesByChatGroup(groupId: number): Promise<GroupMessage[]> {
+    return this.groupMessages.filter(
+      msg => msg.groupId === groupId
+    ).sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
   }
 }
 
