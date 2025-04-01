@@ -58,7 +58,7 @@ function UserCard({ user, onConnect, isConnecting }: UserCardProps) {
           </div>
         </div>
         
-        <h3 className="font-medium text-lg mb-1">{studentId}</h3>
+        <h3 className="font-medium text-lg mb-1">{user.username}</h3>
         <p className="text-sm text-gray-300 text-center mb-3 px-4">{specialization}</p>
         
         {user.skills && Object.keys(user.skills).length > 0 && (
@@ -112,9 +112,9 @@ function MessageCard({ message, sender, receiver, currentUserId }: MessageCardPr
   // Get user initials for avatar fallback
   const initials = otherUser ? otherUser.username.substring(0, 2).toUpperCase() : "??";
   
-  // Generate a student ID based on username (for UI display)
-  const studentId = otherUser ? 
-    `${otherUser.username}` 
+  // Get the username to display
+  const displayName = otherUser ? 
+    otherUser.username 
     : `User #${isMyMessage ? message.recipientId : message.senderId}`;
   
   // Format timestamp
@@ -142,7 +142,7 @@ function MessageCard({ message, sender, receiver, currentUserId }: MessageCardPr
         {!isMyMessage && (
           <div className="mb-1">
             <span className="font-medium text-sm text-white cursor-pointer hover:underline" onClick={handleViewProfile}>
-              {studentId}
+              {displayName}
             </span>
           </div>
         )}

@@ -139,7 +139,6 @@ export const insertInvitationSchema = createInsertSchema(invitations).pick({
 export const insertConnectionRequestSchema = createInsertSchema(connectionRequests).pick({
   recipientId: true,
   message: true,
-  senderId: true,
 });
 
 export const insertMessageSchema = createInsertSchema(messages).pick({
