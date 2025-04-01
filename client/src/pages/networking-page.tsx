@@ -10,7 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Loader2, UserPlus2, Send, X, Check, Search, MessageCircle } from "lucide-react";
+import { Loader2, UserPlus2, Send, X, Check, Search, MessageCircle, Clock } from "lucide-react";
 import { User, Invitation, Message } from "@shared/schema";
 import NavBar from "@/components/nav-bar";
 
@@ -18,9 +18,10 @@ interface UserCardProps {
   user: Omit<User, "password">;
   onConnect: (userId: number) => void;
   isConnecting: boolean;
+  sentInvitations: Invitation[];
 }
 
-function UserCard({ user, onConnect, isConnecting }: UserCardProps) {
+function UserCard({ user, onConnect, isConnecting, sentInvitations }: UserCardProps) {
   const { user: currentUser } = useAuth();
   
   // Don't show the current user
@@ -29,8 +30,11 @@ function UserCard({ user, onConnect, isConnecting }: UserCardProps) {
   // Get user initials for avatar fallback
   const initials = user.username.substring(0, 2).toUpperCase();
   
-  // Check if users are already connected
+  // Check if users are already connected or have a pending request
   const isAlreadyConnected = currentUser?.connections?.includes(user.id);
+  
+  // Check if there's a pending invitation to this user
+  const hasPendingRequest = sentInvitations?.some((inv: Invitation) => inv.recipientId === user.id);
   
   // Generate a specialized field description based on user skills
   let specialization = "Student at VIT-AP";
@@ -84,6 +88,14 @@ function UserCard({ user, onConnect, isConnecting }: UserCardProps) {
           >
             <Check className="mr-2 h-4 w-4" />
             Connected
+          </Button>
+        ) : hasPendingRequest ? (
+          <Button 
+            disabled={true}
+            className="w-full bg-blue-600 hover:bg-blue-700 cursor-default"
+          >
+            <Clock className="mr-2 h-4 w-4" />
+            Request Sent
           </Button>
         ) : (
           <Button 
@@ -428,9 +440,14 @@ export default function NetworkingPage() {
     },
   });
   
-  // Get pending invitations (received, not sent)
+  // Get pending invitations (received)
   const pendingInvitations = invitations.filter(
-    inv => inv.recipientId === user?.id && inv.status === "pending"
+    (inv: Invitation) => inv.recipientId === user?.id && inv.status === "pending"
+  );
+  
+  // Get sent invitations (outgoing)
+  const sentInvitations = invitations.filter(
+    (inv: Invitation) => inv.senderId === user?.id && inv.status === "pending"
   );
   
   // Search and filter users
@@ -489,9 +506,9 @@ export default function NetworkingPage() {
                 className="data-[state=active]:bg-purple-700 data-[state=active]:text-white text-gray-200 relative"
               >
                 Invitations
-                {pendingInvitations.length > 0 && (
+                {(pendingInvitations.length > 0 || sentInvitations.length > 0) && (
                   <Badge variant="destructive" className="ml-2">
-                    {pendingInvitations.length}
+                    {pendingInvitations.length + sentInvitations.length}
                   </Badge>
                 )}
               </TabsTrigger>
@@ -556,6 +573,7 @@ export default function NetworkingPage() {
                       user={otherUser}
                       onConnect={(userId) => connectMutation.mutate(userId)}
                       isConnecting={connectMutation.isPending}
+                      sentInvitations={sentInvitations}
                     />
                   ))
                 )}
@@ -568,21 +586,61 @@ export default function NetworkingPage() {
                   <div className="flex justify-center py-12">
                     <Loader2 className="h-8 w-8 animate-spin text-purple-500" />
                   </div>
-                ) : pendingInvitations.length === 0 ? (
+                ) : pendingInvitations.length === 0 && sentInvitations.length === 0 ? (
                   <div className="text-center py-12 text-gray-400">
                     No pending invitations
                   </div>
                 ) : (
-                  pendingInvitations.map(invitation => (
-                    <InvitationCard
-                      key={invitation.id}
-                      invitation={invitation}
-                      user={findUserById(invitation.senderId)}
-                      onAccept={(id) => acceptMutation.mutate(id)}
-                      onDecline={(id) => declineMutation.mutate(id)}
-                      isResponding={acceptMutation.isPending || declineMutation.isPending}
-                    />
-                  ))
+                  <>
+                    {pendingInvitations.length > 0 && (
+                      <>
+                        <h3 className="text-xl font-medium mb-4 text-white">Received Invitations</h3>
+                        {pendingInvitations.map(invitation => (
+                          <InvitationCard
+                            key={invitation.id}
+                            invitation={invitation}
+                            user={findUserById(invitation.senderId)}
+                            onAccept={(id) => acceptMutation.mutate(id)}
+                            onDecline={(id) => declineMutation.mutate(id)}
+                            isResponding={acceptMutation.isPending || declineMutation.isPending}
+                          />
+                        ))}
+                      </>
+                    )}
+                    
+                    {sentInvitations.length > 0 && (
+                      <div className="mt-8">
+                        <h3 className="text-xl font-medium mb-4 text-white">Sent Invitations</h3>
+                        {sentInvitations.map(invitation => (
+                          <div className="bg-gray-900 rounded-lg p-4 mb-4" key={invitation.id}>
+                            <div className="flex items-center">
+                              <div className="cursor-pointer">
+                                <div className="bg-purple-600 h-12 w-12 rounded-full flex items-center justify-center text-white text-lg font-bold">
+                                  {findUserById(invitation.recipientId)?.username.substring(0, 2).toUpperCase() || '??'}
+                                </div>
+                              </div>
+                              <div className="ml-4 flex-1">
+                                <div className="flex items-center">
+                                  <h3 className="font-medium text-white">
+                                    {findUserById(invitation.recipientId)?.username || `User #${invitation.recipientId}`}
+                                  </h3>
+                                  <span className="text-purple-400 text-sm ml-2">Invitation pending</span>
+                                </div>
+                                {invitation.message && (
+                                  <p className="text-sm mt-1 text-gray-300 italic">"{invitation.message}"</p>
+                                )}
+                                <div className="mt-2">
+                                  <span className="text-xs text-gray-500">
+                                    Sent on {new Date(invitation.createdAt).toLocaleDateString()}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </>
                 )}
               </div>
             </TabsContent>
