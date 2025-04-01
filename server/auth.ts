@@ -22,7 +22,18 @@ async function hashPassword(password: string) {
 }
 
 async function comparePasswords(supplied: string, stored: string) {
+  // Make sure stored password has the correct format
+  if (!stored || !stored.includes(".")) {
+    return false; // If stored password doesn't have the right format, authentication fails
+  }
+  
   const [hashed, salt] = stored.split(".");
+  
+  // Safety checks for both values
+  if (!hashed || !salt) {
+    return false;
+  }
+  
   const hashedBuf = Buffer.from(hashed, "hex");
   const suppliedBuf = (await scryptAsync(supplied, salt, 64)) as Buffer;
   return timingSafeEqual(hashedBuf, suppliedBuf);
@@ -30,7 +41,7 @@ async function comparePasswords(supplied: string, stored: string) {
 
 export function setupAuth(app: Express) {
   const sessionSettings: session.SessionOptions = {
-    secret: process.env.DATABASE_URL!, // Using DATABASE_URL as secret since it's unique per deployment
+    secret: process.env.DATABASE_URL || "skillconnect-secret-key", // Providing a fallback secret
     resave: false,
     saveUninitialized: false,
     store: storage.sessionStore,
@@ -99,13 +110,13 @@ export function setupAuth(app: Express) {
   });
 
   app.post("/api/login", (req, res, next) => {
-    passport.authenticate("local", (err, user, info) => {
+    passport.authenticate("local", (err: Error | null, user: Express.User | false, info: { message: string } | undefined) => {
       if (err) return next(err);
       if (!user) {
         return res.status(401).json({ message: info?.message || "Authentication failed" });
       }
-      req.logIn(user, (err) => {
-        if (err) return next(err);
+      req.logIn(user, (loginErr: Error) => {
+        if (loginErr) return next(loginErr);
         res.json(user);
       });
     })(req, res, next);
