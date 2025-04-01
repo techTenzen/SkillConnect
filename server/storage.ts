@@ -98,158 +98,30 @@ export class MemStorage implements IStorage {
     this.sessionStore = new MemoryStore({
       checkPeriod: 86400000, // prune expired entries every 24h
     });
-
-    // Add some sample users with plaintext passwords for easier testing (we'll update this in production!)
-    // No longer using hashed passwords for debugging purposes
-    this.users = [
-      {
-        id: 1,
-        username: "21bcb7023",
-        password: "pass123",
-        bio: "Computer Science student specializing in AI and machine learning.",
-        avatar: "",
-        skills: {
-          "JavaScript": 4,
-          "Python": 5,
-          "Machine Learning": 4,
-          "Data Analysis": 3
-        },
-        social: { github: "github.com/user1", linkedin: "linkedin.com/in/user1" },
-        connections: []
-      },
-      {
-        id: 2,
-        username: "21bce7152",
-        password: "pass123",
-        bio: "Software engineering student with a focus on web development.",
-        avatar: "",
-        skills: {
-          "JavaScript": 5,
-          "React": 4,
-          "Node.js": 4,
-          "UI/UX Design": 3
-        },
-        social: { github: "github.com/user2", linkedin: "linkedin.com/in/user2" },
-        connections: []
-      },
-      {
-        id: 3,
-        username: "21bcb7022",
-        password: "pass123",
-        bio: "Information systems student interested in database design and management.",
-        avatar: "",
-        skills: {
-          "SQL": 4,
-          "Database Design": 5,
-          "Python": 3,
-          "Data Analysis": 4
-        },
-        social: { github: "github.com/user3", linkedin: "linkedin.com/in/user3" },
-        connections: []
-      }
-    ];
-    this.nextId.users = 4;
-
-    // Add sample projects
-    this.projects = [
-      {
-        id: 1,
-        title: "AI Research Assistant",
-        description: "An AI-powered research assistant that helps students find and summarize academic papers.",
-        ownerId: 1,
-        skills: ["Python", "Machine Learning", "Natural Language Processing"],
-        tools: ["TensorFlow", "Hugging Face", "Flask"],
-        rolesSought: ["Backend Developer", "Machine Learning Engineer", "UI Designer"],
-        setting: "hybrid",
-        location: "VIT-AP Campus",
-        deadline: new Date(2023, 6, 30).toISOString(),
-        members: [1],
-        status: "open",
-        joinRequests: [],
-        membersNeeded: 3
-      },
-      {
-        id: 2,
-        title: "Student Marketplace App",
-        description: "An app for students to buy and sell textbooks, electronics, and other items within the campus.",
-        ownerId: 2,
-        skills: ["JavaScript", "React Native", "Node.js"],
-        tools: ["Expo", "Express", "MongoDB"],
-        rolesSought: ["Mobile Developer", "Backend Developer", "UI/UX Designer"],
-        setting: "remote",
-        location: "",
-        deadline: new Date(2023, 7, 15).toISOString(),
-        members: [2],
-        status: "open",
-        joinRequests: [],
-        membersNeeded: 2
-      }
-    ];
-    this.nextId.projects = 3;
-
-    // Add sample discussions
-    this.discussions = [
-      {
-        id: 1,
-        authorId: 1,
-        upvotes: 5,
-        upvotedBy: [2, 3],
-        category: "technical",
-        title: "Best practices for collaborative coding in student projects?",
-        content: "I'm working on a team project and we're having issues with code organization. What version control and collaboration tools do you recommend for a team of 5 students?",
-        createdAt: new Date(2023, 5, 15).toISOString()
-      },
-      {
-        id: 2,
-        authorId: 2,
-        upvotes: 3,
-        upvotedBy: [1],
-        category: "career",
-        title: "Internship opportunities for CS students in Amaravati",
-        content: "Does anyone know of companies in or near Amaravati that offer internships for computer science students? I'm looking for something in web development or software engineering.",
-        createdAt: new Date(2023, 5, 18).toISOString()
-      }
-    ];
-    this.nextId.discussions = 3;
-
-    // Add sample replies
-    this.replies = [
-      {
-        id: 1,
-        discussionId: 1,
-        parentReplyId: null,
-        authorId: 3,
-        content: "Git is essential for version control. For collaboration, I recommend GitHub with a project board, or Trello for task management.",
-        upvotes: 2,
-        upvotedBy: [1],
-        createdAt: new Date(2023, 5, 15, 2, 30).toISOString()
-      },
-      {
-        id: 2,
-        discussionId: 1,
-        parentReplyId: 1,
-        authorId: 2,
-        content: "I agree with Git/GitHub. Also check out VS Code's Live Share for real-time collaborative coding sessions!",
-        upvotes: 1,
-        upvotedBy: [3],
-        createdAt: new Date(2023, 5, 15, 3, 15).toISOString()
-      }
-    ];
-    this.nextId.replies = 3;
-
-    // Add sample invitations
-    this.invitations = [
-      {
-        id: 1,
-        senderId: 1,
-        recipientId: 3,
-        projectId: 1,
-        status: "pending",
-        message: "Would like to collaborate on AI Research Assistant project.",
-        createdAt: new Date(2023, 5, 20).toISOString()
-      }
-    ];
-    this.nextId.invitations = 2;
+    
+    // Clear all data
+    this.users = [];
+    this.projects = [];
+    this.discussions = [];
+    this.replies = [];
+    this.invitations = [];
+    this.connectionRequests = [];
+    this.messages = [];
+    this.chatGroups = [];
+    this.groupMessages = [];
+    
+    // Reset IDs back to 1
+    this.nextId = {
+      users: 1,
+      projects: 1,
+      discussions: 1,
+      replies: 1,
+      invitations: 1,
+      connectionRequests: 1,
+      messages: 1,
+      chatGroups: 1,
+      groupMessages: 1,
+    };
   }
 
   async getUser(id: number): Promise<User | undefined> {

@@ -1,8 +1,9 @@
 import { storage } from "../server/storage";
 
-async function clearUsers() {
-  console.log("COMPLETELY REMOVING ALL DATA FROM THE DATABASE...");
-  
+async function completeRebuild() {
+  console.log("COMPLETELY REBUILDING THE DATABASE FROM SCRATCH");
+  console.log("Deleting all application data...");
+
   // Get direct access to the memory storage
   const memStorage = storage as any;
   
@@ -32,13 +33,9 @@ async function clearUsers() {
   
   // Verify that deletion was successful
   const users = await storage.getAllUsers();
-  console.log(`User count after clearing: ${users.length}`);
-  const projects = await storage.getAllProjects();
-  console.log(`Project count after clearing: ${projects.length}`);
-  const discussions = await storage.getAllDiscussions();
-  console.log(`Discussion count after clearing: ${discussions.length}`);
+  console.log(`User count after rebuild: ${users.length}`);
   
-  console.log("ALL DATA COMPLETELY REMOVED!");
+  console.log("DATABASE REBUILD COMPLETE - ALL USERS AND DATA DELETED");
 }
 
-clearUsers().catch(console.error);
+completeRebuild().catch(console.error);
