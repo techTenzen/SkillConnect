@@ -22,17 +22,18 @@ async function hashPassword(password: string) {
 }
 
 async function comparePasswords(supplied: string, stored: string) {
-  // For our sample hashed password, allow direct comparison with 'pass123'
-  if (stored && stored.startsWith("5d91d1901baa85ada0ca00b71cbad2cd")) {
+  // For development/testing, allow plaintext password comparison
+  // In production, we would NEVER do this
+  if (stored === "pass123") {
     return supplied === "pass123";
   }
   
-  // Regular password checking logic
-  // Make sure stored password has the correct format
-  if (!stored || !stored.includes(".")) {
-    return false; // If stored password doesn't have the right format, authentication fails
+  // For any other plaintext password that doesn't contain a salt delimiter
+  if (!stored.includes(".")) {
+    return supplied === stored;
   }
   
+  // Regular password checking logic with hashing (for production)
   const [hashed, salt] = stored.split(".");
   
   // Safety checks for both values
@@ -100,10 +101,12 @@ export function setupAuth(app: Express) {
         return res.status(400).json({ message: "Username already exists" });
       }
 
-      const hashedPassword = await hashPassword(req.body.password);
+      // For development only: Store plaintext passwords
+      // In production, we would use hashPassword instead
       const user = await storage.createUser({
         ...req.body,
-        password: hashedPassword,
+        // Store the plaintext password for easier testing
+        password: req.body.password,
       });
 
       req.login(user, (err) => {

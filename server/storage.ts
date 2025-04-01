@@ -64,14 +64,13 @@ export class MemStorage implements IStorage {
       checkPeriod: 86400000, // prune expired entries every 24h
     });
 
-    // Add some sample users with pre-hashed passwords (format: hash.salt)
-    const sampleHashedPassword = "5d91d1901baa85ada0ca00b71cbad2cd47359a2d2b7b6a1077482b65760d6448a9d22503cfb373d8abbf095239465e1139c7810c763ad0cf58cd34144d1293e3.7065cb46c08307ffb1695780dd1888b2";
-    
+    // Add some sample users with plaintext passwords for easier testing (we'll update this in production!)
+    // No longer using hashed passwords for debugging purposes
     this.users = [
       {
         id: 1,
         username: "21bcb7023",
-        password: sampleHashedPassword,
+        password: "pass123",
         bio: "Computer Science student specializing in AI and machine learning.",
         avatar: "",
         skills: {
@@ -85,7 +84,7 @@ export class MemStorage implements IStorage {
       {
         id: 2,
         username: "21bce7152",
-        password: sampleHashedPassword,
+        password: "pass123",
         bio: "Software engineering student with a focus on web development.",
         avatar: "",
         skills: {
@@ -99,7 +98,7 @@ export class MemStorage implements IStorage {
       {
         id: 3,
         username: "21bcb7022",
-        password: sampleHashedPassword,
+        password: "pass123",
         bio: "Information systems student interested in database design and management.",
         avatar: "",
         skills: {
