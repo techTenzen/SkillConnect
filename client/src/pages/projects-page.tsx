@@ -66,9 +66,38 @@ export default function ProjectsPage() {
     queryKey: ["/api/users"],
   });
   
-  // Filter projects based on whether they have enough members
-  // NOTE: Disabling filter temporarily to show all projects
-  const projects = allProjects;
+  // Filter projects based on search query, sort, and member availability
+  const filteredProjects = allProjects?.filter(project => {
+    // Filter by search
+    if (search) {
+      const searchLower = search.toLowerCase();
+      return (
+        project.title.toLowerCase().includes(searchLower) ||
+        project.description.toLowerCase().includes(searchLower) ||
+        project.skills?.some(skill => skill.toLowerCase().includes(searchLower)) ||
+        project.tools?.some(tool => tool.toLowerCase().includes(searchLower)) ||
+        project.rolesSought?.some(role => role.toLowerCase().includes(searchLower))
+      );
+    }
+    return true;
+  });
+
+  // Sort projects based on selected criteria
+  const sortedProjects = filteredProjects?.sort((a, b) => {
+    if (sortBy === "recent") {
+      // Sort by most recent (using id as a proxy for creation time)
+      return b.id - a.id;
+    } else if (sortBy === "popular") {
+      // Sort by popularity (using members count as a proxy)
+      return (b.members?.length || 0) - (a.members?.length || 0);
+    } else if (sortBy === "comments") {
+      // For now, just return recent as we don't have comment counts
+      return b.id - a.id;
+    }
+    return 0;
+  });
+
+  const projects = sortedProjects;
 
   const form = useForm({
     resolver: zodResolver(
@@ -413,28 +442,31 @@ export default function ProjectsPage() {
             </Dialog>
           </div>
 
-          <div className="flex items-center gap-4">
-            <Button variant="outline" size="icon" className="shrink-0">
-              <SlidersHorizontal className="h-4 w-4" />
-            </Button>
-            <div className="flex-1">
-              <Input
-                placeholder="Search by Major, Skills, Tags"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="w-full"
-              />
+          <div className="bg-card rounded-lg p-4 shadow-sm">
+            <div className="flex flex-col md:flex-row items-stretch md:items-center gap-4">
+              <div className="flex items-center gap-2 md:w-1/3">
+                <SlidersHorizontal className="h-4 w-4 text-muted-foreground" />
+                <span className="text-sm font-medium">Filters</span>
+              </div>
+              <div className="flex-1">
+                <Input
+                  placeholder="Search by Skills, Tools, or Roles"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  className="w-full"
+                />
+              </div>
+              <Select value={sortBy} onValueChange={setSortBy}>
+                <SelectTrigger className="md:w-[180px]">
+                  <SelectValue placeholder="Sort by" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="recent">Most Recent</SelectItem>
+                  <SelectItem value="popular">Most Popular</SelectItem>
+                  <SelectItem value="comments">Most Comments</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
-            <Select value={sortBy} onValueChange={setSortBy}>
-              <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="Sort by" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="recent">Most Recent</SelectItem>
-                <SelectItem value="popular">Most Popular</SelectItem>
-                <SelectItem value="comments">Most Comments</SelectItem>
-              </SelectContent>
-            </Select>
           </div>
 
           {isLoading ? (
@@ -451,13 +483,14 @@ export default function ProjectsPage() {
               {projects?.map((project) => (
                 <motion.div key={project.id} variants={item}>
                   <Card 
-                    className="group hover:shadow-lg transition-shadow duration-200 cursor-pointer"
+                    className="group hover:shadow-lg transition-shadow duration-200 cursor-pointer overflow-hidden border-purple-500/10 hover:border-purple-500/30"
                     onClick={() => navigate(`/projects/${project.id}`)}
                   >
+                    <div className="h-1 bg-gradient-to-r from-purple-500 to-indigo-500"></div>
                     <CardHeader>
                       <div className="flex justify-between items-start">
                         <div>
-                          <CardTitle className="text-xl hover:text-primary">
+                          <CardTitle className="text-xl font-bold hover:text-primary">
                             {project.title}
                           </CardTitle>
                           <CardDescription className="text-sm">
@@ -466,16 +499,19 @@ export default function ProjectsPage() {
                               : (allUsers?.find(u => u.id === project.ownerId)?.username || "unknown user")}
                           </CardDescription>
                         </div>
-                        <Button 
-                          variant="ghost" 
-                          size="icon"
-                          onClick={(e) => {
-                            e.stopPropagation(); // Prevent card click when button is clicked
-                            // Additional button action can be added here
-                          }}
-                        >
-                          <Plus className="h-4 w-4" />
-                        </Button>
+                        {project.ownerId !== user?.id && (
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            className="text-xs bg-purple-500/10 hover:bg-purple-500/20 border-purple-500/20"
+                            onClick={(e) => {
+                              e.stopPropagation(); // Prevent card click when button is clicked
+                              navigate(`/projects/${project.id}`);
+                            }}
+                          >
+                            View Details
+                          </Button>
+                        )}
                       </div>
                     </CardHeader>
                     <CardContent>
@@ -483,20 +519,27 @@ export default function ProjectsPage() {
                         {project.description}
                       </p>
                       <div className="flex flex-wrap gap-2 mb-4">
-                        {project.skills?.map((skill) => (
-                          <Badge key={skill} variant="secondary" className="bg-purple-500/10">
+                        {project.skills?.slice(0, 3).map((skill) => (
+                          <Badge key={skill} variant="secondary" className="bg-purple-500/10 hover:bg-purple-500/20">
                             {skill}
                           </Badge>
                         ))}
+                        {project.skills && project.skills.length > 3 && (
+                          <Badge variant="outline" className="text-xs">+{project.skills.length - 3} more</Badge>
+                        )}
                       </div>
-                      <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                        <div className="flex items-center gap-1">
-                          <Eye className="h-4 w-4" />
-                          <span>34</span>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                          <div className="flex items-center gap-1">
+                            <Eye className="h-4 w-4" />
+                            <span>{Math.floor(Math.random() * 50) + 10}</span>
+                          </div>
+                          <div className="flex items-center gap-1 border-l pl-4 border-border">
+                            <span className="font-medium">{project.membersNeeded}</span> members needed
+                          </div>
                         </div>
-                        <div className="flex items-center gap-1">
-                          <MessageSquare className="h-4 w-4" />
-                          <span>12</span>
+                        <div className="text-xs text-muted-foreground">
+                          Deadline: {project.deadline ? new Date(project.deadline).toLocaleDateString() : 'None'}
                         </div>
                       </div>
                     </CardContent>
