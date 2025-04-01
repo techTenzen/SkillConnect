@@ -1,227 +1,201 @@
-import { db } from "../server/db";
-import { users } from "../shared/schema";
+import { storage } from "../server/storage";
 import { scrypt, randomBytes } from "crypto";
 import { promisify } from "util";
-import { sql } from "drizzle-orm";
 
 const scryptAsync = promisify(scrypt);
 
 async function hashPassword(password: string) {
-  const salt = randomBytes(16).toString("hex");
-  const buf = (await scryptAsync(password, salt, 64)) as Buffer;
-  return `${buf.toString("hex")}.${salt}`;
+  // For development purposes only, using a simple password hashing
+  return password;
 }
 
 async function addSampleUsers() {
   console.log("Adding sample users...");
 
-  const sampleUsers = [
+  const users = [
     {
-      username: "TechDev123",
-      password: "password123", // Will be hashed
-      bio: "Computer Science student passionate about web development and machine learning.",
+      username: "johndoe",
+      password: await hashPassword("password123"),
+      bio: "Computer Science student with a passion for AI and machine learning.",
       avatar: "https://i.pravatar.cc/150?img=1",
       skills: {
-        "JavaScript": 85,
-        "Python": 75,
-        "Machine Learning": 60,
-        "React": 80,
-        "Node.js": 70
+        "JavaScript": 4,
+        "Python": 5,
+        "Machine Learning": 3,
+        "Data Analysis": 4
       },
       social: {
-        github: "https://github.com/techdev123",
-        linkedin: "https://linkedin.com/in/techdev123",
-        instagram: "https://instagram.com/techdev123"
-      }
-    },
-    {
-      username: "AIResearcher",
-      password: "password123",
-      bio: "PhD candidate focused on artificial intelligence and natural language processing.",
-      avatar: "https://i.pravatar.cc/150?img=2",
-      skills: {
-        "Python": 90,
-        "NLP": 95,
-        "Deep Learning": 85,
-        "TensorFlow": 80,
-        "Research": 90
+        github: "johndoe",
+        linkedin: "john-doe-cs"
       },
-      social: {
-        github: "https://github.com/airesearcher",
-        linkedin: "https://linkedin.com/in/airesearcher"
-      }
+      connections: []
     },
     {
-      username: "FullStackDev",
-      password: "password123",
-      bio: "Full stack developer with 3 years of experience building web applications.",
-      avatar: "https://i.pravatar.cc/150?img=3",
-      skills: {
-        "React": 90,
-        "Node.js": 85,
-        "TypeScript": 80,
-        "MongoDB": 75,
-        "AWS": 70
-      },
-      social: {
-        github: "https://github.com/fullstackdev",
-        linkedin: "https://linkedin.com/in/fullstackdev",
-        instagram: "https://instagram.com/fullstackdev"
-      }
-    },
-    {
-      username: "UIDesigner",
-      password: "password123",
-      bio: "UI/UX designer with a passion for creating beautiful and intuitive interfaces.",
-      avatar: "https://i.pravatar.cc/150?img=4",
-      skills: {
-        "Figma": 95,
-        "Adobe XD": 85,
-        "UI Design": 90,
-        "UX Research": 75,
-        "HTML/CSS": 70
-      },
-      social: {
-        github: "https://github.com/uidesigner",
-        linkedin: "https://linkedin.com/in/uidesigner",
-        instagram: "https://instagram.com/uidesigner"
-      }
-    },
-    {
-      username: "DataScientist",
-      password: "password123",
-      bio: "Data scientist focused on big data analytics and statistical modeling.",
+      username: "janedoe",
+      password: await hashPassword("password123"),
+      bio: "Frontend developer specializing in React and UI/UX design.",
       avatar: "https://i.pravatar.cc/150?img=5",
       skills: {
-        "Python": 90,
-        "R": 85,
-        "SQL": 80,
-        "Data Visualization": 85,
-        "Machine Learning": 75
+        "JavaScript": 5,
+        "React": 5,
+        "CSS": 4,
+        "UI/UX Design": 4
       },
       social: {
-        github: "https://github.com/datascientist",
-        linkedin: "https://linkedin.com/in/datascientist"
-      }
+        github: "janedoe",
+        linkedin: "jane-doe-dev"
+      },
+      connections: []
     },
     {
-      username: "CloudArchitect",
-      password: "password123",
-      bio: "Cloud architect specializing in AWS and GCP infrastructure design.",
-      avatar: "https://i.pravatar.cc/150?img=6",
+      username: "alexsmith",
+      password: await hashPassword("password123"),
+      bio: "Backend developer with expertise in Node.js and database management.",
+      avatar: "https://i.pravatar.cc/150?img=3",
       skills: {
-        "AWS": 95,
-        "GCP": 85,
-        "Terraform": 80,
-        "Kubernetes": 75,
-        "Docker": 90
+        "Node.js": 5,
+        "Express": 4,
+        "MongoDB": 4,
+        "SQL": 3
       },
       social: {
-        github: "https://github.com/cloudarchitect",
-        linkedin: "https://linkedin.com/in/cloudarchitect"
-      }
+        github: "alexsmith",
+        linkedin: "alex-smith-dev"
+      },
+      connections: []
     },
     {
-      username: "MobileDev",
-      password: "password123",
-      bio: "Mobile app developer with expertise in React Native and Flutter.",
+      username: "samgreen",
+      password: await hashPassword("password123"),
+      bio: "Cybersecurity enthusiast with a background in network security.",
+      avatar: "https://i.pravatar.cc/150?img=4",
+      skills: {
+        "Network Security": 5,
+        "Ethical Hacking": 4,
+        "Python": 3,
+        "Cryptography": 4
+      },
+      social: {
+        github: "samgreen",
+        linkedin: "sam-green-security"
+      },
+      connections: []
+    },
+    {
+      username: "taylorjones",
+      password: await hashPassword("password123"),
+      bio: "Mobile app developer specializing in cross-platform solutions.",
       avatar: "https://i.pravatar.cc/150?img=7",
       skills: {
-        "React Native": 90,
-        "Flutter": 85,
-        "JavaScript": 80,
-        "Dart": 75,
-        "Mobile UI": 85
+        "React Native": 5,
+        "Flutter": 4,
+        "JavaScript": 5,
+        "Mobile UI Design": 4
       },
       social: {
-        github: "https://github.com/mobiledev",
-        linkedin: "https://linkedin.com/in/mobiledev",
-        instagram: "https://instagram.com/mobiledev"
-      }
-    },
-    {
-      username: "SecurityExpert",
-      password: "password123",
-      bio: "Cybersecurity expert with a focus on web application security.",
-      avatar: "https://i.pravatar.cc/150?img=8",
-      skills: {
-        "Penetration Testing": 90,
-        "Security Auditing": 85,
-        "Network Security": 80,
-        "Cryptography": 75,
-        "Ethical Hacking": 90
+        github: "taylorjones",
+        linkedin: "taylor-jones-mobile"
       },
-      social: {
-        github: "https://github.com/securityexpert",
-        linkedin: "https://linkedin.com/in/securityexpert"
-      }
+      connections: []
     },
     {
-      username: "GameDeveloper",
-      password: "password123",
-      bio: "Game developer with experience in Unity and Unreal Engine.",
+      username: "jamielee",
+      password: await hashPassword("password123"),
+      bio: "Data scientist with a focus on predictive analytics and visualization.",
       avatar: "https://i.pravatar.cc/150?img=9",
       skills: {
-        "Unity": 90,
-        "C#": 85,
-        "Unreal Engine": 75,
-        "3D Modeling": 70,
-        "Game Design": 80
+        "Python": 5,
+        "R": 4,
+        "Data Visualization": 5,
+        "Machine Learning": 4
       },
       social: {
-        github: "https://github.com/gamedeveloper",
-        linkedin: "https://linkedin.com/in/gamedeveloper",
-        instagram: "https://instagram.com/gamedeveloper"
-      }
+        github: "jamielee",
+        linkedin: "jamie-lee-data"
+      },
+      connections: []
     },
     {
-      username: "BlockchainDev",
-      password: "password123",
-      bio: "Blockchain developer specializing in smart contracts and decentralized applications.",
+      username: "rileybrown",
+      password: await hashPassword("password123"),
+      bio: "Full stack developer with a passion for cloud architecture.",
       avatar: "https://i.pravatar.cc/150?img=10",
       skills: {
-        "Solidity": 90,
-        "Ethereum": 85,
-        "Web3.js": 80,
-        "Smart Contracts": 85,
-        "Blockchain Architecture": 75
+        "AWS": 4,
+        "Docker": 4,
+        "React": 5,
+        "Node.js": 5
       },
       social: {
-        github: "https://github.com/blockchaindev",
-        linkedin: "https://linkedin.com/in/blockchaindev"
-      }
+        github: "rileybrown",
+        linkedin: "riley-brown-cloud"
+      },
+      connections: []
+    },
+    {
+      username: "jordanwilson",
+      password: await hashPassword("password123"),
+      bio: "Game developer with expertise in Unity and 3D modeling.",
+      avatar: "https://i.pravatar.cc/150?img=12",
+      skills: {
+        "Unity": 5,
+        "C#": 4,
+        "3D Modeling": 3,
+        "Game Design": 4
+      },
+      social: {
+        github: "jordanwilson",
+        linkedin: "jordan-wilson-games"
+      },
+      connections: []
+    },
+    {
+      username: "caseykim",
+      password: await hashPassword("password123"),
+      bio: "DevOps engineer focused on CI/CD pipelines and infrastructure automation.",
+      avatar: "https://i.pravatar.cc/150?img=14",
+      skills: {
+        "Jenkins": 5,
+        "Kubernetes": 4,
+        "Terraform": 4,
+        "Linux": 5
+      },
+      social: {
+        github: "caseykim",
+        linkedin: "casey-kim-devops"
+      },
+      connections: []
+    },
+    {
+      username: "morganpatel",
+      password: await hashPassword("password123"),
+      bio: "AR/VR developer creating immersive experiences with cutting-edge technology.",
+      avatar: "https://i.pravatar.cc/150?img=15",
+      skills: {
+        "Unity": 4,
+        "AR Development": 5,
+        "3D Design": 4,
+        "C#": 4
+      },
+      social: {
+        github: "morganpatel",
+        linkedin: "morgan-patel-xr"
+      },
+      connections: []
     }
   ];
 
-  for (const user of sampleUsers) {
+  for (const userData of users) {
     try {
-      // Check if user already exists
-      const existingUsers = await db
-        .select()
-        .from(users)
-        .where(sql`${users.username} = ${user.username}`);
-      
-      if (existingUsers.length === 0) {
-        // Hash the password
-        const hashedPassword = await hashPassword(user.password);
-        
-        // Insert the user
-        await db.insert(users).values({
-          ...user,
-          password: hashedPassword
-        });
-        
-        console.log(`Added user: ${user.username}`);
-      } else {
-        console.log(`User ${user.username} already exists. Skipping.`);
-      }
+      await storage.createUser(userData);
+      console.log(`Created user: ${userData.username}`);
     } catch (error) {
-      console.error(`Error adding user ${user.username}:`, error);
+      console.error(`Error creating user ${userData.username}:`, error);
     }
   }
 
   console.log("Sample users added successfully!");
-  process.exit(0);
 }
 
-addSampleUsers();
+// Run the function
+addSampleUsers().catch(console.error);

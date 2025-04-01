@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import NavBar from "@/components/nav-bar";
 import { useQuery, useMutation } from "@tanstack/react-query";
@@ -16,6 +16,7 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
+  CardFooter,
 } from "@/components/ui/card";
 import {
   Dialog,
@@ -43,7 +44,21 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Eye, Image as ImageIcon, Loader2, MessageSquare, Plus, SlidersHorizontal, X } from "lucide-react";
+import { 
+  Eye, 
+  Image as ImageIcon, 
+  Loader2, 
+  MessageSquare, 
+  Plus, 
+  Search, 
+  SlidersHorizontal, 
+  X, 
+  Calendar as CalendarIcon,
+  Tag,
+  Users,
+  Filter,
+  LayoutGrid,
+} from "lucide-react";
 import { format } from "date-fns";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -57,6 +72,9 @@ export default function ProjectsPage() {
   const [search, setSearch] = useState("");
   const [sortBy, setSortBy] = useState("recent");
   const [date, setDate] = useState<Date>();
+  const [filterSkills, setFilterSkills] = useState<string[]>([]);
+  const [filterOpen, setFilterOpen] = useState(false);
+  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
 
   const { data: allProjects, isLoading } = useQuery<Project[]>({
     queryKey: ["/api/projects"],
@@ -79,6 +97,14 @@ export default function ProjectsPage() {
         project.rolesSought?.some(role => role.toLowerCase().includes(searchLower))
       );
     }
+    
+    // Filter by skills
+    if (filterSkills.length > 0) {
+      return project.skills?.some(skill => 
+        filterSkills.includes(skill.toLowerCase())
+      );
+    }
+    
     return true;
   });
 
@@ -444,28 +470,86 @@ export default function ProjectsPage() {
 
           <div className="bg-card rounded-lg p-4 shadow-sm">
             <div className="flex flex-col md:flex-row items-stretch md:items-center gap-4">
-              <div className="flex items-center gap-2 md:w-1/3">
-                <SlidersHorizontal className="h-4 w-4 text-muted-foreground" />
-                <span className="text-sm font-medium">Filters</span>
+              <div className="flex items-center gap-2 w-full md:w-auto">
+                <div className="relative w-full md:w-[180px]">
+                  <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Search projects"
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    className="w-full pl-9"
+                  />
+                </div>
               </div>
-              <div className="flex-1">
-                <Input
-                  placeholder="Search by Skills, Tools, or Roles"
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  className="w-full"
-                />
+              
+              <div className="flex-1 flex items-center gap-2">
+                <Popover open={filterOpen} onOpenChange={setFilterOpen}>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" className="gap-2">
+                      <Filter className="h-4 w-4" />
+                      Filters
+                      {filterSkills.length > 0 && (
+                        <Badge variant="secondary" className="ml-1">
+                          {filterSkills.length}
+                        </Badge>
+                      )}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-80">
+                    <div className="space-y-4">
+                      <h4 className="font-medium">Filter by Skills</h4>
+                      <div className="flex flex-wrap gap-2">
+                        {['python', 'react', 'javascript', 'ui/ux', 'nodejs', 'mobile'].map(skill => (
+                          <Badge 
+                            key={skill}
+                            variant={filterSkills.includes(skill) ? "default" : "outline"}
+                            className="cursor-pointer"
+                            onClick={() => {
+                              if (filterSkills.includes(skill)) {
+                                setFilterSkills(filterSkills.filter(s => s !== skill));
+                              } else {
+                                setFilterSkills([...filterSkills, skill]);
+                              }
+                            }}
+                          >
+                            {skill}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                  </PopoverContent>
+                </Popover>
+                
+                <Select value={sortBy} onValueChange={setSortBy}>
+                  <SelectTrigger className="w-[180px]">
+                    <SelectValue placeholder="Sort By" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="recent">Most Recent</SelectItem>
+                    <SelectItem value="popular">Most Popular</SelectItem>
+                    <SelectItem value="comments">Most Comments</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
-              <Select value={sortBy} onValueChange={setSortBy}>
-                <SelectTrigger className="md:w-[180px]">
-                  <SelectValue placeholder="Sort by" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="recent">Most Recent</SelectItem>
-                  <SelectItem value="popular">Most Popular</SelectItem>
-                  <SelectItem value="comments">Most Comments</SelectItem>
-                </SelectContent>
-              </Select>
+              
+              <div className="flex items-center gap-2">
+                <Button
+                  variant={viewMode === "grid" ? "default" : "outline"}
+                  size="icon"
+                  onClick={() => setViewMode("grid")}
+                  className="h-9 w-9"
+                >
+                  <LayoutGrid className="h-4 w-4" />
+                </Button>
+                <Button 
+                  variant={viewMode === "list" ? "default" : "outline"}
+                  size="icon"
+                  onClick={() => setViewMode("list")}
+                  className="h-9 w-9"
+                >
+                  <SlidersHorizontal className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
           </div>
 
@@ -473,80 +557,157 @@ export default function ProjectsPage() {
             <div className="flex justify-center">
               <Loader2 className="h-8 w-8 animate-spin" />
             </div>
-          ) : (
-            <motion.div
-              variants={container}
-              initial="hidden"
-              animate="show"
-              className="grid gap-6 md:grid-cols-2 lg:grid-cols-3"
-            >
-              {projects?.map((project) => (
-                <motion.div key={project.id} variants={item}>
-                  <Card 
-                    className="group hover:shadow-lg transition-shadow duration-200 cursor-pointer overflow-hidden border-purple-500/10 hover:border-purple-500/30"
-                    onClick={() => navigate(`/projects/${project.id}`)}
-                  >
-                    <div className="h-1 bg-gradient-to-r from-purple-500 to-indigo-500"></div>
-                    <CardHeader>
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <CardTitle className="text-xl font-bold hover:text-primary">
-                            {project.title}
-                          </CardTitle>
-                          <CardDescription className="text-sm">
+          ) : projects && projects.length > 0 ? (
+            viewMode === "grid" ? (
+              <motion.div
+                variants={container}
+                initial="hidden"
+                animate="show"
+                className="grid gap-6 md:grid-cols-2 lg:grid-cols-3"
+              >
+                {projects.map((project) => (
+                  <motion.div key={project.id} variants={item}>
+                    <Card 
+                      className="group hover:shadow-lg transition-shadow duration-200 cursor-pointer overflow-hidden border-purple-500/10 hover:border-purple-500/30"
+                      onClick={() => navigate(`/projects/${project.id}`)}
+                    >
+                      <div className="h-1 bg-gradient-to-r from-purple-500 to-indigo-500"></div>
+                      <CardHeader>
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <CardTitle className="text-xl font-bold hover:text-primary">
+                              {project.title}
+                            </CardTitle>
+                            <CardDescription className="text-sm">
+                              Posted by {project.ownerId === user?.id 
+                                ? "you" 
+                                : (allUsers?.find(u => u.id === project.ownerId)?.username || "unknown user")}
+                            </CardDescription>
+                          </div>
+                          {project.ownerId !== user?.id && (
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              className="text-xs bg-purple-500/10 hover:bg-purple-500/20 border-purple-500/20"
+                              onClick={(e) => {
+                                e.stopPropagation(); // Prevent card click when button is clicked
+                                navigate(`/projects/${project.id}`);
+                              }}
+                            >
+                              View Details
+                            </Button>
+                          )}
+                        </div>
+                      </CardHeader>
+                      <CardContent>
+                        <p className="text-muted-foreground mb-4 line-clamp-2">
+                          {project.description}
+                        </p>
+                        <div className="flex flex-wrap gap-2 mb-4">
+                          {project.skills?.slice(0, 3).map((skill) => (
+                            <Badge key={skill} variant="secondary" className="bg-purple-500/10 hover:bg-purple-500/20">
+                              {skill}
+                            </Badge>
+                          ))}
+                          {project.skills && project.skills.length > 3 && (
+                            <Badge variant="outline" className="text-xs">+{project.skills.length - 3} more</Badge>
+                          )}
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                            <div className="flex items-center gap-1">
+                              <Users className="h-4 w-4" />
+                              <span className="font-medium">{project.membersNeeded}</span> members needed
+                            </div>
+                          </div>
+                          <div className="text-xs text-muted-foreground">
+                            Deadline: {project.deadline ? new Date(project.deadline).toLocaleDateString() : 'None'}
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </motion.div>
+                ))}
+              </motion.div>
+            ) : (
+              <motion.div
+                variants={container}
+                initial="hidden"
+                animate="show"
+                className="flex flex-col gap-4"
+              >
+                {projects.map((project) => (
+                  <motion.div key={project.id} variants={item}>
+                    <Card 
+                      className="group hover:shadow-lg transition-shadow duration-200 cursor-pointer overflow-hidden border-purple-500/10 hover:border-purple-500/30"
+                      onClick={() => navigate(`/projects/${project.id}`)}
+                    >
+                      <div className="h-1 bg-gradient-to-r from-purple-500 to-indigo-500"></div>
+                      <div className="flex flex-col md:flex-row items-start gap-4 p-4">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex justify-between items-center mb-2">
+                            <h3 className="text-xl font-bold">{project.title}</h3>
+                            <Badge variant="outline" className="ml-2">
+                              {project.setting === "remote" ? "Remote" : "In-Person"}
+                            </Badge>
+                          </div>
+                          <p className="text-sm text-muted-foreground mb-2">
                             Posted by {project.ownerId === user?.id 
                               ? "you" 
                               : (allUsers?.find(u => u.id === project.ownerId)?.username || "unknown user")}
-                          </CardDescription>
+                          </p>
+                          <p className="text-muted-foreground line-clamp-2 mb-2">{project.description}</p>
+                          <div className="flex flex-wrap gap-2 mb-2">
+                            {project.skills?.slice(0, 5).map((skill) => (
+                              <Badge key={skill} variant="secondary" className="bg-purple-500/10 hover:bg-purple-500/20">
+                                {skill}
+                              </Badge>
+                            ))}
+                            {project.skills && project.skills.length > 5 && (
+                              <Badge variant="outline" className="text-xs">+{project.skills.length - 5} more</Badge>
+                            )}
+                          </div>
                         </div>
-                        {project.ownerId !== user?.id && (
+                        <div className="flex flex-col items-start gap-2 min-w-[200px]">
+                          <div className="flex items-center gap-2">
+                            <Users className="h-4 w-4 text-muted-foreground" />
+                            <span><span className="font-medium">{project.membersNeeded}</span> members needed</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <CalendarIcon className="h-4 w-4 text-muted-foreground" />
+                            <span>Deadline: {project.deadline ? new Date(project.deadline).toLocaleDateString() : 'None'}</span>
+                          </div>
                           <Button 
-                            variant="outline" 
+                            className="mt-2"
                             size="sm"
-                            className="text-xs bg-purple-500/10 hover:bg-purple-500/20 border-purple-500/20"
                             onClick={(e) => {
-                              e.stopPropagation(); // Prevent card click when button is clicked
+                              e.stopPropagation();
                               navigate(`/projects/${project.id}`);
                             }}
                           >
                             View Details
                           </Button>
-                        )}
-                      </div>
-                    </CardHeader>
-                    <CardContent>
-                      <p className="text-muted-foreground mb-4 line-clamp-2">
-                        {project.description}
-                      </p>
-                      <div className="flex flex-wrap gap-2 mb-4">
-                        {project.skills?.slice(0, 3).map((skill) => (
-                          <Badge key={skill} variant="secondary" className="bg-purple-500/10 hover:bg-purple-500/20">
-                            {skill}
-                          </Badge>
-                        ))}
-                        {project.skills && project.skills.length > 3 && (
-                          <Badge variant="outline" className="text-xs">+{project.skills.length - 3} more</Badge>
-                        )}
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                          <div className="flex items-center gap-1">
-                            <Eye className="h-4 w-4" />
-                            <span>{Math.floor(Math.random() * 50) + 10}</span>
-                          </div>
-                          <div className="flex items-center gap-1 border-l pl-4 border-border">
-                            <span className="font-medium">{project.membersNeeded}</span> members needed
-                          </div>
-                        </div>
-                        <div className="text-xs text-muted-foreground">
-                          Deadline: {project.deadline ? new Date(project.deadline).toLocaleDateString() : 'None'}
                         </div>
                       </div>
-                    </CardContent>
-                  </Card>
-                </motion.div>
-              ))}
-            </motion.div>
+                    </Card>
+                  </motion.div>
+                ))}
+              </motion.div>
+            )
+          ) : (
+            <div className="text-center py-12">
+              <div className="bg-muted/50 inline-flex rounded-full p-4 mb-4">
+                <Tag className="h-6 w-6 text-muted-foreground" />
+              </div>
+              <h3 className="text-lg font-medium mb-2">No projects found</h3>
+              <p className="text-muted-foreground mb-4">Try adjusting your filters or search terms</p>
+              <Button variant="outline" onClick={() => {
+                setSearch("");
+                setFilterSkills([]);
+              }}>
+                Reset filters
+              </Button>
+            </div>
           )}
         </div>
       </main>

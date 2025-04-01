@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/use-auth";
 import { queryClient, apiRequest } from "@/lib/queryClient";
@@ -8,7 +8,8 @@ import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/componen
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, UserPlus2, Send, X, Check } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Loader2, UserPlus2, Send, X, Check, Search } from "lucide-react";
 import { User, Invitation } from "@shared/schema";
 import NavBar from "@/components/nav-bar";
 
@@ -153,6 +154,9 @@ export default function NetworkingPage() {
   const { user } = useAuth();
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("people");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchBy, setSearchBy] = useState<"username" | "skills">("username");
+  const [filteredUsers, setFilteredUsers] = useState<Omit<User, "password">[]>([]);
   
   // Fetch all users
   const { data: users = [], isLoading: isLoadingUsers } = useQuery<Omit<User, "password">[]>({
@@ -182,8 +186,8 @@ export default function NetworkingPage() {
         return [];
       }
     },
-    // Disable this query until the invitations table exists
-    enabled: false,
+    // Enable invitations query
+    enabled: true,
   });
   
   // Create invitation mutation
@@ -261,6 +265,35 @@ export default function NetworkingPage() {
     inv => inv.recipientId === user?.id && inv.status === "pending"
   );
   
+  // Search and filter users
+  useEffect(() => {
+    if (!users.length || !searchQuery.trim()) {
+      setFilteredUsers(users.filter(u => u.id !== user?.id));
+      return;
+    }
+
+    const query = searchQuery.toLowerCase().trim();
+    const filtered = users.filter(u => {
+      // Don't include current user
+      if (u.id === user?.id) return false;
+      
+      if (searchBy === "username") {
+        return u.username.toLowerCase().includes(query) || 
+               (u.bio && u.bio.toLowerCase().includes(query));
+      } else if (searchBy === "skills") {
+        if (!u.skills) return false;
+        
+        // Check if any skill matches the query
+        return Object.keys(u.skills).some(skill => 
+          skill.toLowerCase().includes(query)
+        );
+      }
+      return false;
+    });
+    
+    setFilteredUsers(filtered);
+  }, [users, searchQuery, searchBy, user?.id]);
+  
   // Find user data for each invitation
   const findUserById = (userId: number) => {
     return users.find(u => u.id === userId);
@@ -288,26 +321,54 @@ export default function NetworkingPage() {
         </TabsList>
         
         <TabsContent value="people">
+          <div className="mb-6">
+            <div className="flex gap-2 items-center mb-4">
+              <div className="relative flex-1">
+                <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search for students by name or skill..."
+                  className="pl-8"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
+              </div>
+              <div className="flex items-center space-x-2">
+                <Button
+                  variant={searchBy === "username" ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setSearchBy("username")}
+                >
+                  By Name
+                </Button>
+                <Button
+                  variant={searchBy === "skills" ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setSearchBy("skills")}
+                >
+                  By Skill
+                </Button>
+              </div>
+            </div>
+          </div>
+          
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
             {isLoadingUsers ? (
               <div className="col-span-full flex justify-center py-12">
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
               </div>
-            ) : users.length === 0 ? (
+            ) : filteredUsers.length === 0 ? (
               <div className="col-span-full text-center py-12 text-muted-foreground">
-                No users found
+                {searchQuery ? "No users matching your search" : "No users found"}
               </div>
             ) : (
-              users
-                .filter(u => u.id !== user.id)
-                .map(otherUser => (
-                  <UserCard
-                    key={otherUser.id}
-                    user={otherUser}
-                    onConnect={(userId) => connectMutation.mutate(userId)}
-                    isConnecting={connectMutation.isPending}
-                  />
-                ))
+              filteredUsers.map(otherUser => (
+                <UserCard
+                  key={otherUser.id}
+                  user={otherUser}
+                  onConnect={(userId) => connectMutation.mutate(userId)}
+                  isConnecting={connectMutation.isPending}
+                />
+              ))
             )}
           </div>
         </TabsContent>

@@ -1,231 +1,188 @@
-import { db } from "../server/db";
-import { projects, users } from "../shared/schema";
-import { sql } from "drizzle-orm";
+import { storage } from "../server/storage";
 
 async function addSampleProjects() {
   console.log("Adding sample projects...");
 
-  try {
-    // First get all user IDs to use as owner IDs
-    const allUsers = await db.select({ id: users.id }).from(users);
-    if (allUsers.length === 0) {
-      console.error("No users found. Please run add-sample-users.ts first.");
-      process.exit(1);
-    }
-    
-    console.log(`Found ${allUsers.length} users to use as project owners`);
-    console.log("User IDs:", allUsers.map(user => user.id));
-
-    const sampleProjects = [
-      {
-        title: "AI-Powered Education Platform",
-        description: "Developing an intelligent tutoring system that adapts to student learning styles and provides personalized education through natural language processing and adaptive learning algorithms.",
-        skills: ["JavaScript", "React", "Node.js", "Machine Learning", "NLP"],
-        tools: ["TensorFlow", "MongoDB", "Express", "React", "Node.js"],
-        roles_sought: ["Frontend Developer", "AI Specialist", "Educational Content Creator"],
-        setting: "hybrid",
-        location: "Engineering Building",
-        deadline: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000), // 60 days from now
-        members_needed: 4,
-        status: "active",
-        owner_id: getRandomUserId(allUsers),
-        members: [], // Will be updated later
-        join_requests: []
-      },
-      {
-        title: "Blockchain-Based Academic Credentials",
-        description: "Creating a secure, tamper-proof system for academic credentials using blockchain technology to verify degrees, certificates, and course completions for educational institutions.",
-        skills: ["Solidity", "JavaScript", "Blockchain", "Smart Contracts", "Web3.js"],
-        tools: ["Ethereum", "Truffle", "Web3.js", "Node.js", "React"],
-        roles_sought: ["Blockchain Developer", "UI Designer", "Security Expert"],
-        setting: "remote",
-        location: null,
-        deadline: new Date(Date.now() + 45 * 24 * 60 * 60 * 1000), // 45 days from now
-        members_needed: 3,
-        status: "active",
-        owner_id: getRandomUserId(allUsers),
-        members: [],
-        join_requests: []
-      },
-      {
-        title: "AR Campus Navigation App",
-        description: "Building an augmented reality application that helps new students navigate campus, find classrooms, and discover important facilities through an intuitive AR interface.",
-        skills: ["Unity", "AR Development", "Mobile Development", "UI/UX Design", "3D Modeling"],
-        tools: ["Unity", "ARKit", "ARCore", "Blender", "Figma"],
-        roles_sought: ["AR Developer", "3D Modeler", "UI Designer"],
-        setting: "in-person",
-        location: "Design Lab",
-        deadline: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days from now
-        members_needed: 4,
-        status: "active",
-        owner_id: getRandomUserId(allUsers),
-        members: [],
-        join_requests: []
-      },
-      {
-        title: "Smart Campus IoT System",
-        description: "Developing a network of IoT devices to monitor and optimize energy usage, classroom occupancy, and environmental conditions across campus buildings.",
-        skills: ["IoT", "Embedded Systems", "Python", "Data Analysis", "Cloud Computing"],
-        tools: ["Raspberry Pi", "Arduino", "AWS IoT", "TensorFlow", "Node-RED"],
-        roles_sought: ["IoT Engineer", "Backend Developer", "Data Scientist"],
-        setting: "hybrid",
-        location: "Engineering Lab",
-        deadline: new Date(Date.now() + 75 * 24 * 60 * 60 * 1000), // 75 days from now
-        members_needed: 5,
-        status: "active",
-        owner_id: getRandomUserId(allUsers),
-        members: [],
-        join_requests: []
-      },
-      {
-        title: "Virtual Science Lab Simulator",
-        description: "Creating a virtual reality environment for conducting science experiments that are too dangerous, expensive, or impractical for physical labs, accessible to students remotely.",
-        skills: ["Unity", "VR Development", "3D Modeling", "Physics Simulation", "C#"],
-        tools: ["Unity", "Oculus SDK", "Blender", "C#", "WebGL"],
-        roles_sought: ["VR Developer", "3D Artist", "Physics Programmer"],
-        setting: "remote",
-        location: null,
-        deadline: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000), // 60 days from now
-        members_needed: 4,
-        status: "active",
-        owner_id: getRandomUserId(allUsers),
-        members: [],
-        join_requests: []
-      },
-      {
-        title: "Peer-to-Peer Tutoring Platform",
-        description: "Building a web application that connects students who excel in certain subjects with peers who need help, including scheduling, virtual classrooms, and resource sharing.",
-        skills: ["JavaScript", "React", "Node.js", "WebRTC", "UI/UX Design"],
-        tools: ["React", "Node.js", "Socket.io", "MongoDB", "Figma"],
-        roles_sought: ["Frontend Developer", "UX Designer", "Backend Developer"],
-        setting: "hybrid",
-        location: "Computer Science Building",
-        deadline: new Date(Date.now() + 45 * 24 * 60 * 60 * 1000), // 45 days from now
-        members_needed: 3,
-        status: "active",
-        owner_id: getRandomUserId(allUsers),
-        members: [],
-        join_requests: []
-      },
-      {
-        title: "Mental Health Support AI",
-        description: "Developing an AI chatbot specifically designed to provide mental health resources, stress management techniques, and wellness support for university students.",
-        skills: ["Python", "NLP", "Machine Learning", "Psychology", "API Integration"],
-        tools: ["TensorFlow", "Flask", "MongoDB", "React", "Node.js"],
-        roles_sought: ["AI Developer", "Psychology Student", "Backend Developer"],
-        setting: "remote",
-        location: null,
-        deadline: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days from now
-        members_needed: 3,
-        status: "active",
-        owner_id: getRandomUserId(allUsers),
-        members: [],
-        join_requests: []
-      },
-      {
-        title: "Campus Events Mobile App",
-        description: "Creating a comprehensive mobile application for tracking campus events, club activities, and academic deadlines with personalized recommendations and calendar integration.",
-        skills: ["React Native", "JavaScript", "UI/UX Design", "Firebase", "API Development"],
-        tools: ["React Native", "Firebase", "Figma", "Node.js", "Express"],
-        roles_sought: ["Mobile Developer", "UI Designer", "Backend Developer"],
-        setting: "hybrid",
-        location: "Student Center",
-        deadline: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000), // 60 days from now
-        members_needed: 4,
-        status: "active",
-        owner_id: getRandomUserId(allUsers),
-        members: [],
-        join_requests: []
-      },
-      {
-        title: "Sustainable Campus Initiatives Tracker",
-        description: "Building a platform to track and visualize environmental sustainability initiatives on campus, including energy usage, waste reduction, and carbon footprint calculations.",
-        skills: ["Data Visualization", "JavaScript", "React", "Python", "Sustainability"],
-        tools: ["D3.js", "React", "Node.js", "MongoDB", "Python"],
-        roles_sought: ["Frontend Developer", "Data Visualization Specialist", "Sustainability Researcher"],
-        setting: "in-person",
-        location: "Environmental Science Building",
-        deadline: new Date(Date.now() + 45 * 24 * 60 * 60 * 1000), // 45 days from now
-        members_needed: 3,
-        status: "active",
-        owner_id: getRandomUserId(allUsers),
-        members: [],
-        join_requests: []
-      },
-      {
-        title: "Collaborative Research Paper Generator",
-        description: "Developing a tool that helps research teams collaborate on academic papers with integrated citation management, version control, and AI-assisted writing suggestions.",
-        skills: ["NLP", "Machine Learning", "JavaScript", "UI/UX Design", "Research Methods"],
-        tools: ["TensorFlow", "React", "Node.js", "MongoDB", "Git"],
-        roles_sought: ["AI Developer", "Frontend Developer", "UX Researcher"],
-        setting: "remote",
-        location: null,
-        deadline: new Date(Date.now() + 75 * 24 * 60 * 60 * 1000), // 75 days from now
-        members_needed: 3,
-        status: "active",
-        owner_id: getRandomUserId(allUsers),
-        members: [],
-        join_requests: []
-      }
-    ];
-
-    // Add members to each project (2-3 random members including the owner)
-    for (const project of sampleProjects) {
-      project.members = [project.owner_id];
-      
-      // Add 1-2 more random members
-      const additionalMemberCount = Math.floor(Math.random() * 2) + 1;
-      for (let i = 0; i < additionalMemberCount; i++) {
-        const randomUserId = getRandomUserId(allUsers, [...project.members]);
-        if (randomUserId) {
-          project.members.push(randomUserId);
-        }
-      }
-    }
-
-    // Insert projects
-    for (const project of sampleProjects) {
-      // Check if project already exists
-      const existingProjects = await db
-        .select()
-        .from(projects)
-        .where(sql`${projects.title} = ${project.title}`);
-      
-      if (existingProjects.length === 0) {
-        // Use SQL directly to insert the project
-        await db.execute(
-          sql`INSERT INTO projects 
-              (title, description, skills, tools, roles_sought, setting, location, deadline, members_needed, status, owner_id, members, join_requests)
-              VALUES 
-              (${project.title}, ${project.description}, ${JSON.stringify(project.skills)}, ${JSON.stringify(project.tools)}, 
-               ${JSON.stringify(project.roles_sought)}, ${project.setting}, ${project.location}, ${project.deadline.toISOString()}, 
-               ${project.members_needed}, ${project.status}, ${project.owner_id}, ${JSON.stringify(project.members)}, ${JSON.stringify(project.join_requests)})
-             `
-        );
-        console.log(`Added project: ${project.title}`);
-      } else {
-        console.log(`Project "${project.title}" already exists. Skipping.`);
-      }
-    }
-
-    console.log("Sample projects added successfully!");
-  } catch (error) {
-    console.error("Error adding sample projects:", error);
-  }
-
-  process.exit(0);
-}
-
-// Helper function to get a random user ID from the allUsers array
-function getRandomUserId(allUsers: { id: number }[], excludeIds: number[] = []): number {
-  const availableUsers = allUsers.filter(user => !excludeIds.includes(user.id));
-  if (availableUsers.length === 0) {
-    // Default to the first user if no available users
-    return allUsers[0].id;
+  // First, get all existing projects to avoid duplicates
+  const existingProjects = await storage.getAllProjects();
+  console.log(`Found ${existingProjects.length} existing projects`);
+  
+  // Then get all users
+  const users = await storage.getAllUsers();
+  console.log(`Found ${users.length} users with IDs: ${users.map(u => u.id).join(', ')}`);
+  
+  if (users.length < 1) {
+    console.error("No users found to create sample projects. Please add users first.");
+    return;
   }
   
-  const randomIndex = Math.floor(Math.random() * availableUsers.length);
-  return availableUsers[randomIndex].id;
+  // Clear existing projects if requested
+  const shouldClearProjects = false; // Set to true to clear existing projects
+  if (shouldClearProjects) {
+    // We don't have a direct way to clear projects in our storage interface
+    // This would require adding a new method to the storage interface
+    console.log("Note: Clearing existing projects is not implemented");
+  }
+
+  function getRandomUserId(allUsers: { id: number }[], excludeIds: number[] = []): number {
+    const availableUsers = allUsers.filter(user => !excludeIds.includes(user.id));
+    if (availableUsers.length === 0) return allUsers[0].id;
+    
+    const randomIndex = Math.floor(Math.random() * availableUsers.length);
+    return availableUsers[randomIndex].id;
+  }
+
+  const projects = [
+    {
+      title: "AI Research Assistant",
+      description: "Developing an AI-powered research assistant to help students find relevant academic papers and resources for their projects.",
+      ownerId: getRandomUserId(users),
+      skills: ["Python", "Machine Learning", "Natural Language Processing"],
+      tools: ["TensorFlow", "PyTorch", "Hugging Face", "NLTK"],
+      rolesSought: ["Backend Developer", "ML Engineer", "UI Designer"],
+      setting: "remote",
+      location: null,
+      deadline: "2023-12-31",
+      membersNeeded: 3,
+      status: "open"
+    },
+    {
+      title: "Student Collaboration Platform",
+      description: "Building a web platform to connect students with complementary skills for project collaboration and peer learning.",
+      ownerId: getRandomUserId(users),
+      skills: ["JavaScript", "React", "Node.js", "UI/UX Design"],
+      tools: ["Next.js", "MongoDB", "Express", "Figma"],
+      rolesSought: ["Frontend Developer", "Backend Developer", "UI/UX Designer"],
+      setting: "hybrid",
+      location: "Campus Library",
+      deadline: "2023-11-15",
+      membersNeeded: 4,
+      status: "open"
+    },
+    {
+      title: "Campus Navigation App",
+      description: "Creating a mobile app to help students navigate campus facilities, find classes, and discover available study spaces in real-time.",
+      ownerId: getRandomUserId(users),
+      skills: ["React Native", "GPS Integration", "Backend Development"],
+      tools: ["Expo", "Firebase", "Google Maps API"],
+      rolesSought: ["Mobile Developer", "Backend Developer", "UX Researcher"],
+      setting: "on-campus",
+      location: "Tech Hub",
+      deadline: "2024-01-20",
+      membersNeeded: 3,
+      status: "open"
+    },
+    {
+      title: "Peer Tutoring Matching System",
+      description: "Developing a platform to connect students who need academic help with peers who can provide tutoring in specific subjects.",
+      ownerId: getRandomUserId(users),
+      skills: ["Web Development", "Database Design", "UI/UX"],
+      tools: ["Django", "PostgreSQL", "Bootstrap"],
+      rolesSought: ["Python Developer", "Frontend Developer", "Database Specialist"],
+      setting: "remote",
+      location: null,
+      deadline: "2023-12-10",
+      membersNeeded: 3,
+      status: "open"
+    },
+    {
+      title: "Academic Event Management System",
+      description: "Building a system to streamline the organization, registration, and management of academic events, conferences, and workshops.",
+      ownerId: getRandomUserId(users),
+      skills: ["Full Stack Development", "Database Management", "API Integration"],
+      tools: ["Vue.js", "Node.js", "MySQL", "AWS"],
+      rolesSought: ["Frontend Developer", "Backend Developer", "DevOps"],
+      setting: "hybrid",
+      location: "Computer Science Department",
+      deadline: "2024-02-15",
+      membersNeeded: 4,
+      status: "open"
+    },
+    {
+      title: "Sustainability Tracking Dashboard",
+      description: "Creating a dashboard to visualize and track campus sustainability metrics, including energy usage, waste management, and carbon footprint.",
+      ownerId: getRandomUserId(users),
+      skills: ["Data Visualization", "Frontend Development", "Data Analysis"],
+      tools: ["D3.js", "React", "Python", "Tableau"],
+      rolesSought: ["Data Scientist", "UI Developer", "Sustainability Expert"],
+      setting: "remote",
+      location: null,
+      deadline: "2024-01-10",
+      membersNeeded: 3,
+      status: "open"
+    },
+    {
+      title: "Research Paper Recommendation Engine",
+      description: "Developing an AI-powered recommendation engine to suggest relevant research papers based on a student's academic interests and reading history.",
+      ownerId: getRandomUserId(users),
+      skills: ["Machine Learning", "Backend Development", "API Development"],
+      tools: ["Python", "Scikit-learn", "FastAPI", "Elasticsearch"],
+      rolesSought: ["ML Engineer", "Backend Developer", "Data Engineer"],
+      setting: "remote",
+      location: null,
+      deadline: "2024-03-01",
+      membersNeeded: 3,
+      status: "open"
+    },
+    {
+      title: "Course Schedule Optimizer",
+      description: "Building a tool to help students create optimal course schedules based on preferences, requirements, and time constraints.",
+      ownerId: getRandomUserId(users),
+      skills: ["Algorithm Design", "Frontend Development", "Data Processing"],
+      tools: ["JavaScript", "React", "Python", "Constraint Programming"],
+      rolesSought: ["Algorithm Specialist", "UI Developer", "Data Engineer"],
+      setting: "hybrid",
+      location: "Engineering Building",
+      deadline: "2023-12-20",
+      membersNeeded: 3,
+      status: "open"
+    },
+    {
+      title: "Campus AR Experience",
+      description: "Creating an augmented reality experience to enhance campus tours and provide interactive information about campus landmarks and facilities.",
+      ownerId: getRandomUserId(users),
+      skills: ["AR Development", "3D Modeling", "Mobile Development"],
+      tools: ["Unity", "ARKit", "ARCore", "Blender"],
+      rolesSought: ["AR Developer", "3D Artist", "Content Creator"],
+      setting: "on-campus",
+      location: "Digital Media Lab",
+      deadline: "2024-04-15",
+      membersNeeded: 4,
+      status: "open"
+    },
+    {
+      title: "Student Mental Health Support App",
+      description: "Developing a mobile application to provide resources, peer support, and professional connections for student mental health and wellness.",
+      ownerId: getRandomUserId(users),
+      skills: ["Mobile Development", "Backend Development", "UX Research"],
+      tools: ["Flutter", "Firebase", "Figma"],
+      rolesSought: ["Mobile Developer", "Backend Developer", "UI/UX Designer", "Mental Health Expert"],
+      setting: "remote",
+      location: null,
+      deadline: "2024-02-28",
+      membersNeeded: 4,
+      status: "open"
+    }
+  ];
+
+  // Create the projects
+  for (const projectData of projects) {
+    try {
+      const { ownerId, ...projectDetails } = projectData;
+      const project = await storage.createProject({
+        ...projectDetails,
+        ownerId,
+        members: [ownerId],
+        joinRequests: [],
+      });
+      console.log(`Created project: ${project.title}`);
+    } catch (error) {
+      console.error(`Error creating project ${projectData.title}:`, error);
+    }
+  }
+
+  console.log("Sample projects added successfully!");
 }
 
-addSampleProjects();
+// Run the function
+addSampleProjects().catch(console.error);
