@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import NavBar from "@/components/nav-bar";
 import { SkillList } from "@/components/skill-meter";
@@ -47,9 +47,42 @@ function SkillEditor({
   initialSkills: Record<string, number>;
   onSave: (skills: Record<string, number>) => void;
 }) {
+  const { toast } = useToast();
   const [skills, setSkills] = useState<Record<string, number>>(initialSkills || {});
   const [newSkill, setNewSkill] = useState("");
   const [newLevel, setNewLevel] = useState(50);
+  const [suggestions, setSuggestions] = useState<string[]>([]);
+  const [loadingSuggestions, setLoadingSuggestions] = useState(false);
+
+  // Load suggestions based on current skills
+  const getSuggestions = async () => {
+    if (Object.keys(skills).length === 0) return;
+    
+    setLoadingSuggestions(true);
+    try {
+      const response = await apiRequest('POST', '/api/skill-suggestions', { skills });
+      const data = await response.json();
+      if (data.suggestions && Array.isArray(data.suggestions)) {
+        setSuggestions(data.suggestions);
+      }
+    } catch (error) {
+      console.error('Failed to get skill suggestions:', error);
+      toast({
+        title: "Couldn't get suggestions",
+        description: "Please try again later.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoadingSuggestions(false);
+    }
+  };
+
+  // Get suggestions when the dialog opens and skills change
+  useEffect(() => {
+    if (open && Object.keys(skills).length > 0) {
+      getSuggestions();
+    }
+  }, [open]);
 
   const handleAddSkill = () => {
     if (!newSkill.trim()) return;
@@ -77,10 +110,22 @@ function SkillEditor({
       [skill]: level
     }));
   };
+  
+  const handleAddSuggestion = (suggestion: string) => {
+    if (skills[suggestion]) return; // Skip if already added
+    
+    setSkills(prev => ({
+      ...prev,
+      [suggestion]: 50 // Start with medium level
+    }));
+    
+    // Remove from suggestions
+    setSuggestions(prev => prev.filter(s => s !== suggestion));
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-[525px]">
         <DialogHeader>
           <DialogTitle>Edit Skills</DialogTitle>
         </DialogHeader>
@@ -108,30 +153,80 @@ function SkillEditor({
             </Button>
           </div>
           
+          {/* Current skills */}
           <div className="space-y-2">
-            {Object.entries(skills).map(([skill, level]) => (
-              <div key={skill} className="flex items-center gap-2">
-                <div className="flex-1 font-medium">{skill}</div>
-                <div className="w-32">
-                  <Slider 
-                    value={[level]} 
-                    min={1} 
-                    max={100} 
-                    step={1}
-                    onValueChange={(value) => handleUpdateSkillLevel(skill, value[0])}
-                  />
+            <h3 className="text-sm font-medium mb-2">Your skills</h3>
+            {Object.keys(skills).length === 0 ? (
+              <p className="text-sm text-muted-foreground">Add your first skill above</p>
+            ) : (
+              Object.entries(skills).map(([skill, level]) => (
+                <div key={skill} className="flex items-center gap-2">
+                  <div className="flex-1 font-medium">{skill}</div>
+                  <div className="w-32">
+                    <Slider 
+                      value={[level]} 
+                      min={1} 
+                      max={100} 
+                      step={1}
+                      onValueChange={(value) => handleUpdateSkillLevel(skill, value[0])}
+                    />
+                  </div>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => handleRemoveSkill(skill)}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
                 </div>
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="ghost"
-                  onClick={() => handleRemoveSkill(skill)}
+              ))
+            )}
+          </div>
+          
+          {/* AI Suggested Skills */}
+          {Object.keys(skills).length > 0 && (
+            <div className="mt-6 pt-4 border-t">
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="text-sm font-medium">AI Suggested Skills</h3>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={getSuggestions}
+                  disabled={loadingSuggestions}
                 >
-                  <X className="h-4 w-4" />
+                  {loadingSuggestions ? 
+                    <Loader2 className="h-4 w-4 animate-spin mr-1" /> : 
+                    <Plus className="h-4 w-4 mr-1" />
+                  }
+                  Refresh
                 </Button>
               </div>
-            ))}
-          </div>
+              
+              {loadingSuggestions ? (
+                <div className="flex justify-center py-4">
+                  <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                </div>
+              ) : suggestions.length > 0 ? (
+                <div className="flex flex-wrap gap-2">
+                  {suggestions.map((suggestion) => (
+                    <Badge 
+                      key={suggestion} 
+                      variant="outline" 
+                      className="cursor-pointer hover:bg-accent"
+                      onClick={() => handleAddSuggestion(suggestion)}
+                    >
+                      {suggestion} <Plus className="h-3 w-3 ml-1" />
+                    </Badge>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground">
+                  No suggestions available. Add more skills to get better recommendations.
+                </p>
+              )}
+            </div>
+          )}
         </div>
         
         <DialogFooter>
@@ -155,7 +250,8 @@ export default function ProfilePage() {
     queryKey: ["/api/projects"],
     queryFn: async ({ signal }) => {
       try {
-        const data = await apiRequest("GET", "/api/projects", undefined, { signal });
+        const response = await apiRequest("GET", "/api/projects");
+      const data = await response.json();
         // Ensure data is an array
         const projectsArray = Array.isArray(data) ? data : [];
         

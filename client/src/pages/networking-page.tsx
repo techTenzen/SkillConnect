@@ -9,8 +9,9 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Loader2, UserPlus2, Send, X, Check, Search } from "lucide-react";
-import { User, Invitation } from "@shared/schema";
+import { Textarea } from "@/components/ui/textarea";
+import { Loader2, UserPlus2, Send, X, Check, Search, MessageCircle } from "lucide-react";
+import { User, Invitation, Message } from "@shared/schema";
 import NavBar from "@/components/nav-bar";
 
 interface UserCardProps {
@@ -92,6 +93,64 @@ function UserCard({ user, onConnect, isConnecting }: UserCardProps) {
           Connect
         </Button>
       </CardFooter>
+    </Card>
+  );
+}
+
+// Message component
+interface MessageCardProps {
+  message: Message;
+  sender?: Omit<User, "password">;
+  receiver?: Omit<User, "password">;
+  currentUserId: number;
+}
+
+function MessageCard({ message, sender, receiver, currentUserId }: MessageCardProps) {
+  const isMyMessage = message.senderId === currentUserId;
+  const otherUser = isMyMessage ? receiver : sender;
+  
+  // Get user initials for avatar fallback
+  const initials = otherUser ? otherUser.username.substring(0, 2).toUpperCase() : "??";
+  
+  // Generate a student ID based on username (for UI display)
+  const studentId = otherUser ? 
+    `21${otherUser.username.toLowerCase().substring(0, 3)}${otherUser.id}${Math.floor(Math.random() * 1000)}` 
+    : `User #${isMyMessage ? message.recipientId : message.senderId}`;
+  
+  // Format timestamp
+  const timestamp = new Date(message.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  
+  const handleViewProfile = () => {
+    if (otherUser) {
+      window.location.href = `/users/${otherUser.id}`;
+    }
+  };
+  
+  return (
+    <Card className={`w-full hover:shadow-md transition-shadow bg-purple-950 text-white border-none mb-2`}>
+      <CardContent className="pt-4 pb-4">
+        <div className="flex items-start gap-3">
+          <div 
+            className="cursor-pointer" 
+            onClick={handleViewProfile}
+          >
+            <div className="bg-purple-500 h-10 w-10 rounded-full flex items-center justify-center text-white text-lg font-bold">
+              {initials}
+            </div>
+          </div>
+          <div className="flex-1">
+            <div className="flex justify-between items-center mb-1">
+              <h3 className="text-sm font-medium cursor-pointer hover:underline" onClick={handleViewProfile}>
+                {studentId}
+              </h3>
+              <span className="text-xs text-gray-400">{timestamp}</span>
+            </div>
+            <p className="text-sm text-gray-200 bg-purple-900 p-2 rounded-md">
+              {message.content}
+            </p>
+          </div>
+        </div>
+      </CardContent>
     </Card>
   );
 }
@@ -179,6 +238,8 @@ export default function NetworkingPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [searchBy, setSearchBy] = useState<"username" | "skills">("username");
   const [filteredUsers, setFilteredUsers] = useState<Omit<User, "password">[]>([]);
+  const [selectedUserId, setSelectedUserId] = useState<number | null>(null);
+  const [newMessage, setNewMessage] = useState("");
   
   // Fetch all users
   const { data: users = [], isLoading: isLoadingUsers } = useQuery<Omit<User, "password">[]>({
@@ -212,6 +273,48 @@ export default function NetworkingPage() {
     },
     // Enable invitations query
     enabled: true,
+  });
+  
+  // Fetch messages for the selected user
+  const { data: messages = [], isLoading: isLoadingMessages } = useQuery<Message[]>({
+    queryKey: ["/api/messages", selectedUserId],
+    queryFn: async () => {
+      if (!selectedUserId || !user) return [];
+      try {
+        const response = await apiRequest("GET", `/api/messages/${selectedUserId}`);
+        const data = await response.json();
+        return Array.isArray(data) ? data : [];
+      } catch (error) {
+        console.error("Error fetching messages:", error);
+        return [];
+      }
+    },
+    enabled: Boolean(selectedUserId) && Boolean(user),
+  });
+  
+  // Send message mutation
+  const sendMessageMutation = useMutation({
+    mutationFn: async (content: string) => {
+      if (!selectedUserId || !user) throw new Error("No user selected");
+      await apiRequest("POST", "/api/messages", {
+        recipientId: selectedUserId,
+        content
+      });
+    },
+    onSuccess: () => {
+      setNewMessage("");
+      toast({
+        title: "Message sent",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/messages", selectedUserId] });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Failed to send message",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
   });
   
   // Create connection request mutation
@@ -332,7 +435,7 @@ export default function NetworkingPage() {
           <h1 className="text-3xl font-bold mb-8 text-white">Networking</h1>
         
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-2 mb-8 bg-purple-900">
+            <TabsList className="grid w-full grid-cols-3 mb-8 bg-purple-900">
               <TabsTrigger 
                 value="people" 
                 className="data-[state=active]:bg-purple-700 data-[state=active]:text-white text-gray-200"
@@ -349,6 +452,12 @@ export default function NetworkingPage() {
                     {pendingInvitations.length}
                   </Badge>
                 )}
+              </TabsTrigger>
+              <TabsTrigger 
+                value="messages" 
+                className="data-[state=active]:bg-purple-700 data-[state=active]:text-white text-gray-200"
+              >
+                Messages
               </TabsTrigger>
             </TabsList>
             
@@ -433,6 +542,113 @@ export default function NetworkingPage() {
                     />
                   ))
                 )}
+              </div>
+            </TabsContent>
+            
+            <TabsContent value="messages">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {/* User list */}
+                <div className="bg-gray-900 rounded-lg p-4">
+                  <h3 className="text-lg font-medium mb-4 text-gray-200">Connections</h3>
+                  
+                  <div className="space-y-2 max-h-[500px] overflow-y-auto pr-2">
+                    {users.filter(u => u.id !== user?.id).map(otherUser => {
+                      const isSelected = selectedUserId === otherUser.id;
+                      const initials = otherUser.username.substring(0, 2).toUpperCase();
+                      
+                      return (
+                        <div 
+                          key={otherUser.id}
+                          className={`flex items-center p-2 rounded-md cursor-pointer ${
+                            isSelected ? 'bg-purple-700' : 'hover:bg-gray-800'
+                          }`}
+                          onClick={() => setSelectedUserId(otherUser.id)}
+                        >
+                          <div className="bg-purple-600 h-10 w-10 rounded-full flex items-center justify-center text-white text-lg font-bold mr-3">
+                            {initials}
+                          </div>
+                          <div>
+                            <h4 className="font-medium text-sm text-white">{otherUser.username}</h4>
+                            <p className="text-xs text-gray-400">
+                              {otherUser.bio?.substring(0, 20) || "No bio"}
+                              {otherUser.bio && otherUser.bio.length > 20 ? "..." : ""}
+                            </p>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+                
+                {/* Messages */}
+                <div className="md:col-span-2 bg-gray-900 rounded-lg p-4 flex flex-col">
+                  {selectedUserId ? (
+                    <>
+                      <div className="flex items-center pb-4 border-b border-gray-800 mb-4">
+                        <div className="bg-purple-600 h-10 w-10 rounded-full flex items-center justify-center text-white text-lg font-bold mr-3">
+                          {findUserById(selectedUserId)?.username.substring(0, 2).toUpperCase() || '??'}
+                        </div>
+                        <h3 className="text-lg font-medium text-white">
+                          {findUserById(selectedUserId)?.username || `User #${selectedUserId}`}
+                        </h3>
+                      </div>
+                      
+                      <div className="flex-1 overflow-y-auto mb-4 space-y-2 max-h-[340px]">
+                        {isLoadingMessages ? (
+                          <div className="flex justify-center py-8">
+                            <Loader2 className="h-8 w-8 animate-spin text-purple-500" />
+                          </div>
+                        ) : messages.length === 0 ? (
+                          <div className="text-center py-8 text-gray-400">
+                            No messages yet. Start a conversation!
+                          </div>
+                        ) : (
+                          messages.map(message => (
+                            <MessageCard
+                              key={message.id}
+                              message={message}
+                              sender={findUserById(message.senderId)}
+                              receiver={findUserById(message.recipientId)}
+                              currentUserId={user.id}
+                            />
+                          ))
+                        )}
+                      </div>
+                      
+                      <div className="mt-auto">
+                        <div className="flex gap-2">
+                          <Textarea
+                            placeholder="Type your message..."
+                            className="bg-gray-800 border-gray-700 text-white min-h-[80px]"
+                            value={newMessage}
+                            onChange={(e) => setNewMessage(e.target.value)}
+                          />
+                          <Button 
+                            className="self-end bg-purple-600 hover:bg-purple-700 text-white"
+                            disabled={!newMessage.trim() || sendMessageMutation.isPending}
+                            onClick={() => {
+                              if (newMessage.trim()) {
+                                sendMessageMutation.mutate(newMessage.trim())
+                              }
+                            }}
+                          >
+                            {sendMessageMutation.isPending ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <Send className="h-4 w-4" />
+                            )}
+                          </Button>
+                        </div>
+                      </div>
+                    </>
+                  ) : (
+                    <div className="flex flex-col items-center justify-center h-full text-center py-12">
+                      <MessageCircle className="h-16 w-16 text-gray-600 mb-4" />
+                      <h3 className="text-xl font-medium text-gray-400 mb-2">No conversation selected</h3>
+                      <p className="text-gray-500">Select a user from the list to start messaging</p>
+                    </div>
+                  )}
+                </div>
               </div>
             </TabsContent>
           </Tabs>

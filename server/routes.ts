@@ -13,7 +13,7 @@ import {
   insertChatGroupSchema,
   insertGroupMessageSchema
 } from "@shared/schema";
-import { getAIResponse, getSkillSuggestions } from "./openai";
+import { getAIResponse, getSkillSuggestions } from "./ai";
 
 // Extend WebSocket interface for our custom properties
 interface ExtendedWebSocket extends WebSocket {
@@ -318,6 +318,25 @@ export function registerRoutes(app: Express): Server {
       console.error("AI chat error:", error);
       res.status(500).json({ 
         message: "An error occurred while processing your message. Please try again later." 
+      });
+    }
+  });
+  
+  // AI Skill Suggestions route
+  app.post("/api/skill-suggestions", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+
+    try {
+      if (!req.body.skills || typeof req.body.skills !== 'object') {
+        return res.status(400).json({ message: "Skills object is required" });
+      }
+
+      const suggestions = await getSkillSuggestions(req.body.skills);
+      res.json({ suggestions });
+    } catch (error) {
+      console.error("AI skill suggestions error:", error);
+      res.status(500).json({ 
+        message: "An error occurred while generating skill suggestions. Please try again later." 
       });
     }
   });

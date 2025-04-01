@@ -1,5 +1,5 @@
 import { useAuth } from "@/hooks/use-auth";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { useLocation } from "wouter";
 import { motion } from "framer-motion";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -30,9 +30,19 @@ export default function AuthPage() {
   const { user, loginMutation, registerMutation } = useAuth();
   const [, setLocation] = useLocation();
 
+  // Reference to track if user is from registration to redirect to profile
+  const isFromRegistration = useRef(false);
+
   useEffect(() => {
+    // After successful registration or login
     if (user) {
-      setLocation("/dashboard");
+      if (isFromRegistration.current) {
+        // After registration, go straight to profile
+        setLocation(`/profile`);
+      } else {
+        // After normal login, go to dashboard
+        setLocation("/");
+      }
     }
   }, [user, setLocation]);
 
@@ -180,9 +190,11 @@ export default function AuthPage() {
 
                   <Form {...registerForm}>
                     <form
-                      onSubmit={registerForm.handleSubmit((data) =>
-                        registerMutation.mutate(data)
-                      )}
+                      onSubmit={registerForm.handleSubmit((data) => {
+                        // Set flag to redirect to profile page after registration
+                        isFromRegistration.current = true;
+                        registerMutation.mutate(data);
+                      })}
                       className="space-y-4"
                     >
                       <FormField
