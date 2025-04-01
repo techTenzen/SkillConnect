@@ -46,7 +46,7 @@ export interface IStorage {
   upvoteReply(id: number, userId: number): Promise<Reply | undefined>;
   
   // Invitations
-  createInvitation(invitation: Omit<Invitation, "id" | "senderId" | "status" | "createdAt">): Promise<Invitation>;
+  createInvitation(invitation: Omit<Invitation, "id" | "status" | "createdAt">): Promise<Invitation>;
   getInvitationsByUser(userId: number): Promise<Invitation[]>;
   respondToInvitation(id: number, status: "accepted" | "declined"): Promise<Invitation | undefined>;
   
@@ -481,11 +481,10 @@ export class MemStorage implements IStorage {
   }
 
   // Create an invitation
-  async createInvitation(invitation: Omit<Invitation, "id" | "senderId" | "status" | "createdAt">): Promise<Invitation> {
+  async createInvitation(invitation: Omit<Invitation, "id" | "status" | "createdAt">): Promise<Invitation> {
     const fullInvitation: Invitation = {
       ...invitation,
       id: this.nextId.invitations++,
-      senderId: 0, // This will be set in the route handler
       status: "pending",
       message: invitation.message || null,
       createdAt: new Date().toISOString(),

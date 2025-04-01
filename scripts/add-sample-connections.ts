@@ -1,4 +1,5 @@
 import { storage } from "../server/storage";
+import { InsertConnectionRequest } from "../shared/schema";
 
 async function addSampleConnectionRequests() {
   console.log("Adding sample connection requests...");
@@ -48,13 +49,13 @@ async function addSampleConnectionRequests() {
         continue;
       }
       
-      const request = await storage.createConnectionRequest({
+      const connectionRequest: InsertConnectionRequest = {
         recipientId: pair.recipient,
         message: pair.message,
-        senderId: pair.sender,
-        status: "pending",
-        createdAt: new Date().toISOString()
-      });
+        senderId: pair.sender
+      };
+      
+      const request = await storage.createConnectionRequest(connectionRequest);
       
       console.log(`Created connection request from ${pair.sender} to ${pair.recipient}`);
       

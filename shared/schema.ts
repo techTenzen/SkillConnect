@@ -133,11 +133,13 @@ export const insertInvitationSchema = createInsertSchema(invitations).pick({
   recipientId: true,
   projectId: true,
   message: true,
+  senderId: true,
 });
 
 export const insertConnectionRequestSchema = createInsertSchema(connectionRequests).pick({
   recipientId: true,
   message: true,
+  senderId: true,
 });
 
 export const insertMessageSchema = createInsertSchema(messages).pick({

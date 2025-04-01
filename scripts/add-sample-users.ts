@@ -5,14 +5,32 @@ import { promisify } from "util";
 const scryptAsync = promisify(scrypt);
 
 async function hashPassword(password: string) {
-  // For development purposes only, using a simple password hashing
-  return password;
+  // For development purposes only, using a simple but more secure password hashing
+  const salt = randomBytes(16).toString("hex");
+  const buf = (await scryptAsync(password, salt, 64)) as Buffer;
+  return `${buf.toString("hex")}.${salt}`;
 }
 
 async function addSampleUsers() {
   console.log("Adding sample users...");
 
   const users = [
+    {
+      username: "admin",
+      password: "pass123", // Special plaintext password for testing
+      bio: "Administrator account for testing purposes.",
+      avatar: "https://i.pravatar.cc/150?img=20",
+      skills: {
+        "Administration": 5,
+        "Support": 5,
+        "Testing": 5,
+      },
+      social: {
+        github: "admin",
+        linkedin: "admin-test"
+      },
+      connections: []
+    },
     {
       username: "johndoe",
       password: await hashPassword("password123"),

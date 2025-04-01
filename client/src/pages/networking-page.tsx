@@ -161,11 +161,12 @@ export default function NetworkingPage() {
   // Fetch all users
   const { data: users = [], isLoading: isLoadingUsers } = useQuery<Omit<User, "password">[]>({
     queryKey: ["/api/users"],
-    queryFn: async ({ signal }) => {
+    queryFn: async () => {
       try {
-        const response = await apiRequest("GET", "/api/users", undefined, { signal });
+        const response = await apiRequest("GET", "/api/users");
+        const data = await response.json();
         // Return empty array if response is not an array
-        return Array.isArray(response) ? response : [];
+        return Array.isArray(data) ? data : [];
       } catch (error) {
         console.error("Error fetching users:", error);
         return [];
@@ -176,11 +177,12 @@ export default function NetworkingPage() {
   // Fetch user's invitations
   const { data: invitations = [], isLoading: isLoadingInvitations } = useQuery<Invitation[]>({
     queryKey: ["/api/invitations"],
-    queryFn: async ({ signal }) => {
+    queryFn: async () => {
       try {
-        const response = await apiRequest("GET", "/api/invitations", undefined, { signal });
+        const response = await apiRequest("GET", "/api/invitations");
+        const data = await response.json();
         // Return empty array if response is not an array
-        return Array.isArray(response) ? response : [];
+        return Array.isArray(data) ? data : [];
       } catch (error) {
         console.error("Error fetching invitations:", error);
         return [];
@@ -190,13 +192,12 @@ export default function NetworkingPage() {
     enabled: true,
   });
   
-  // Create invitation mutation
+  // Create connection request mutation
   const connectMutation = useMutation({
     mutationFn: async (recipientId: number) => {
-      await apiRequest("POST", "/api/invitations", {
+      await apiRequest("POST", "/api/connection-requests", {
         recipientId,
-        message: "I'd like to connect with you!",
-        projectId: null
+        message: "I'd like to connect with you!"
       });
     },
     onSuccess: () => {
@@ -204,7 +205,7 @@ export default function NetworkingPage() {
         title: "Connection request sent",
         description: "The user will be notified of your request",
       });
-      queryClient.invalidateQueries({ queryKey: ["/api/invitations"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/connection-requests"] });
     },
     onError: (error: Error) => {
       toast({

@@ -272,7 +272,7 @@ export function registerRoutes(app: Express): Server {
         return res.status(400).json({ message: "Connection request already sent or users already connected" });
       }
       
-      // Add the sender ID and set status and created date
+      // Create the invitation
       const invitation = await storage.createInvitation({
         recipientId: validated.recipientId,
         projectId: validated.projectId,

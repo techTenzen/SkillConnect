@@ -1,4 +1,5 @@
 import { storage } from "../server/storage";
+import { InsertInvitation } from "../shared/schema";
 
 async function addSampleInvitations() {
   console.log("Adding sample project invitations...");
@@ -15,7 +16,7 @@ async function addSampleInvitations() {
   }
 
   // Create dynamic invitations based on actual projects and their owners
-  let invitationData = [];
+  const invitationData: InsertInvitation[] = [];
   
   // Map through available projects and create invitations
   for (let i = 0; i < Math.min(4, projects.length); i++) {
@@ -67,14 +68,7 @@ async function addSampleInvitations() {
         continue;
       }
       
-      const createdInvitation = await storage.createInvitation({
-        recipientId: invitation.recipientId,
-        projectId: invitation.projectId,
-        message: invitation.message,
-        senderId: invitation.senderId,
-        status: "pending",
-        createdAt: new Date().toISOString()
-      });
+      const createdInvitation = await storage.createInvitation(invitation);
       
       console.log(`Created invitation for user ${invitation.recipientId} to join project "${project.title}"`);
       
