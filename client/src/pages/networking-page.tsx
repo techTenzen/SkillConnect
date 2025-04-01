@@ -29,8 +29,8 @@ function UserCard({ user, onConnect, isConnecting }: UserCardProps) {
   // Get user initials for avatar fallback
   const initials = user.username.substring(0, 2).toUpperCase();
   
-  // Generate a student ID based on username (for UI display)
-  const studentId = `21${user.username.toLowerCase().substring(0, 3)}${user.id}${Math.floor(Math.random() * 1000)}`;
+  // Check if users are already connected
+  const isAlreadyConnected = currentUser?.connections?.includes(user.id);
   
   // Generate a specialized field description based on user skills
   let specialization = "Student at VIT-AP";
@@ -77,21 +77,31 @@ function UserCard({ user, onConnect, isConnecting }: UserCardProps) {
         )}
       </CardContent>
       <CardFooter className="flex justify-center pb-4">
-        <Button 
-          onClick={(e) => {
-            e.stopPropagation(); // Prevent navigating to profile
-            onConnect(user.id);
-          }} 
-          disabled={isConnecting}
-          className="w-full bg-purple-600 hover:bg-purple-700"
-        >
-          {isConnecting ? (
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-          ) : (
-            <UserPlus2 className="mr-2 h-4 w-4" />
-          )}
-          Connect
-        </Button>
+        {isAlreadyConnected ? (
+          <Button 
+            disabled={true}
+            className="w-full bg-green-600 hover:bg-green-700 cursor-default"
+          >
+            <Check className="mr-2 h-4 w-4" />
+            Connected
+          </Button>
+        ) : (
+          <Button 
+            onClick={(e) => {
+              e.stopPropagation(); // Prevent navigating to profile
+              onConnect(user.id);
+            }} 
+            disabled={isConnecting}
+            className="w-full bg-purple-600 hover:bg-purple-700"
+          >
+            {isConnecting ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <UserPlus2 className="mr-2 h-4 w-4" />
+            )}
+            Connect
+          </Button>
+        )}
       </CardFooter>
     </Card>
   );
@@ -324,17 +334,39 @@ export default function NetworkingPage() {
     mutationFn: async (recipientId: number) => {
       if (!user) throw new Error("You must be logged in to send connection requests");
       
-      await apiRequest("POST", "/api/connection-requests", {
+      const response = await apiRequest("POST", "/api/connection-requests", {
         recipientId,
         message: "I'd like to connect with you!"
         // No need to send senderId as the server will use the authenticated user's ID
       });
+      
+      // Return the full response so we can check the status code
+      return {
+        status: response.status,
+        data: await response.json()
+      };
     },
-    onSuccess: () => {
-      toast({
-        title: "Connection request sent",
-        description: "The user will be notified of your request",
-      });
+    onSuccess: (result) => {
+      // Check for the special "already connected" status code (409)
+      if (result.status === 409) {
+        // Show a friendly toast instead of an error
+        toast({
+          title: "Already Connected",
+          description: result.data.status === 'already_connected' 
+            ? "You're already connected with this user" 
+            : "You already have a pending connection request with this user",
+          variant: "default",
+        });
+        // Still invalidate queries to ensure UI is up to date
+        queryClient.invalidateQueries({ queryKey: ["/api/users"] });
+      } else {
+        toast({
+          title: "Connection request sent",
+          description: "The user will be notified of your request",
+        });
+      }
+      
+      // Always invalidate these queries to update the UI
       queryClient.invalidateQueries({ queryKey: ["/api/connection-requests"] });
       queryClient.invalidateQueries({ queryKey: ["/api/invitations"] });
     },

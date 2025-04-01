@@ -364,13 +364,23 @@ export function registerRoutes(app: Express): Server {
       );
       
       if (alreadySent) {
-        return res.status(400).json({ message: "Connection request already exists between these users" });
+        // Return a special status code that frontend can interpret as "already connected"
+        return res.status(409).json({ 
+          message: "Already connected", 
+          status: "already_requested",
+          code: "CONNECTION_ALREADY_REQUESTED"
+        });
       }
 
       // Also check if users are already connected
       const sender = await storage.getUser(req.user.id);
       if (sender && sender.connections && sender.connections.includes(validated.recipientId)) {
-        return res.status(400).json({ message: "You are already connected with this user" });
+        // Return a special status code that frontend can interpret as "already connected"
+        return res.status(409).json({ 
+          message: "Already connected", 
+          status: "already_connected",
+          code: "USERS_ALREADY_CONNECTED"
+        });
       }
 
       // Ensure message is not undefined
