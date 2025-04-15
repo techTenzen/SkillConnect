@@ -1,17 +1,19 @@
-import { 
-  InsertUser, User, Project, Discussion, 
+import {
+  InsertUser, User, Project, Discussion,
   Reply, InsertReply, Invitation, InsertInvitation,
   ConnectionRequest, InsertConnectionRequest,
   Message, InsertMessage,
   ChatGroup, InsertChatGroup,
   GroupMessage, InsertGroupMessage
 } from "@shared/schema";
-import { 
+import {
   users, projects, discussions, replies, invitations,
   connectionRequests, messages, chatGroups, groupMessages
 } from "@shared/schema";
 import session from "express-session";
 import createMemoryStore from "memorystore";
+import { db } from "./db"; // Import your Drizzle database connection
+import { eq, and, or, desc, asc } from "drizzle-orm"; // Import Drizzle operators
 
 const MemoryStore = createMemoryStore(session);
 
@@ -39,134 +41,98 @@ export interface IStorage {
   getDiscussion(id: number): Promise<Discussion | undefined>;
   getAllDiscussions(): Promise<Discussion[]>;
   upvoteDiscussion(id: number, userId: number): Promise<Discussion | undefined>;
-  
+
   // Replies
   createReply(reply: Omit<Reply, "id">): Promise<Reply>;
   getRepliesByDiscussion(discussionId: number): Promise<Reply[]>;
   upvoteReply(id: number, userId: number): Promise<Reply | undefined>;
-  
+
   // Invitations
   createInvitation(invitation: Omit<Invitation, "id" | "status" | "createdAt">): Promise<Invitation>;
   getInvitationsByUser(userId: number): Promise<Invitation[]>;
   respondToInvitation(id: number, status: "accepted" | "declined"): Promise<Invitation | undefined>;
-  
+
   // Connection Requests
   createConnectionRequest(request: Omit<ConnectionRequest, "id" | "status" | "createdAt">): Promise<ConnectionRequest>;
   getConnectionRequestsByUser(userId: number): Promise<ConnectionRequest[]>;
   respondToConnectionRequest(id: number, status: "accepted" | "declined"): Promise<ConnectionRequest | undefined>;
-  
+
   // Messages
   createMessage(message: Omit<Message, "id" | "createdAt">): Promise<Message>;
   getMessagesBetweenUsers(user1Id: number, user2Id: number): Promise<Message[]>;
   getAllMessages(): Promise<Message[]>;
   markMessageAsRead(messageId: number): Promise<Message | undefined>;
-  
+
   // Chat Groups
   createChatGroup(group: Omit<ChatGroup, "id" | "createdAt">): Promise<ChatGroup>;
   getChatGroupsByUser(userId: number): Promise<ChatGroup[]>;
   getChatGroup(id: number): Promise<ChatGroup | undefined>;
   addUserToChatGroup(groupId: number, userId: number): Promise<ChatGroup | undefined>;
   removeUserFromChatGroup(groupId: number, userId: number): Promise<ChatGroup | undefined>;
-  
+
   // Group Messages
   createGroupMessage(message: Omit<GroupMessage, "id" | "createdAt">): Promise<GroupMessage>;
   getMessagesByChatGroup(groupId: number): Promise<GroupMessage[]>;
 }
 
-export class MemStorage implements IStorage {
+
+export class DrizzleStorage implements IStorage {
   sessionStore: session.Store;
-  private users: User[] = [];
-  private projects: Project[] = [];
-  private discussions: Discussion[] = [];
-  private replies: Reply[] = [];
-  private invitations: Invitation[] = [];
-  private connectionRequests: ConnectionRequest[] = [];
-  private messages: Message[] = [];
-  private chatGroups: ChatGroup[] = [];
-  private groupMessages: GroupMessage[] = [];
-  private nextId = {
-    users: 1,
-    projects: 1,
-    discussions: 1,
-    replies: 1,
-    invitations: 1,
-    connectionRequests: 1,
-    messages: 1,
-    chatGroups: 1,
-    groupMessages: 1,
-  };
 
   constructor() {
     this.sessionStore = new MemoryStore({
       checkPeriod: 86400000, // prune expired entries every 24h
     });
-    
-    // Clear all data
-    this.users = [];
-    this.projects = [];
-    this.discussions = [];
-    this.replies = [];
-    this.invitations = [];
-    this.connectionRequests = [];
-    this.messages = [];
-    this.chatGroups = [];
-    this.groupMessages = [];
-    
-    // Reset IDs back to 1
-    this.nextId = {
-      users: 1,
-      projects: 1,
-      discussions: 1,
-      replies: 1,
-      invitations: 1,
-      connectionRequests: 1,
-      messages: 1,
-      chatGroups: 1,
-      groupMessages: 1,
-    };
   }
 
+  // Users
   async getUser(id: number): Promise<User | undefined> {
-    return this.users.find(user => user.id === id);
+    const results = await db.select().from(users).where(eq(users.id, id));
+    return results[0];
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
-    return this.users.find(user => user.username === username);
+    const results = await db.select().from(users).where(eq(users.username, username));
+    return results[0];
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
-    // Define an empty social object with the correct type
     const emptySocial: { github?: string, linkedin?: string } = {};
-    
-    const newUser: User = {
+
+    const newUser = {
       ...insertUser,
-      id: this.nextId.users++,
       bio: insertUser.bio || "",
       avatar: insertUser.avatar || "",
       skills: insertUser.skills || {},
-      social: insertUser.social ? 
-        { 
-          github: typeof insertUser.social.github === 'string' ? insertUser.social.github : undefined,
-          linkedin: typeof insertUser.social.linkedin === 'string' ? insertUser.social.linkedin : undefined
-        } : emptySocial,
+      social: insertUser.social ?
+          {
+            github: typeof insertUser.social.github === 'string' ? insertUser.social.github : undefined,
+            linkedin: typeof insertUser.social.linkedin === 'string' ? insertUser.social.linkedin : undefined
+          } : emptySocial,
       connections: []
     };
-    this.users.push(newUser);
-    return newUser;
+
+    const result = await db.insert(users).values(newUser).returning();
+    return result[0];
   }
 
   async updateUser(id: number, updates: Partial<User>): Promise<User | undefined> {
-    const index = this.users.findIndex(user => user.id === id);
-    if (index === -1) return undefined;
-    
-    this.users[index] = { ...this.users[index], ...updates };
-    return this.users[index];
+    const result = await db.update(users)
+        .set(updates)
+        .where(eq(users.id, id))
+        .returning();
+
+    return result[0];
   }
 
+  async getAllUsers(): Promise<User[]> {
+    return await db.select().from(users);
+  }
+
+  // Projects
   async createProject(project: Omit<Project, "id">): Promise<Project> {
-    const newProject: Project = {
+    const newProject = {
       ...project,
-      id: this.nextId.projects++,
       skills: project.skills || [],
       tools: project.tools || [],
       rolesSought: project.rolesSought || [],
@@ -177,24 +143,27 @@ export class MemStorage implements IStorage {
       joinRequests: project.joinRequests || [],
       membersNeeded: project.membersNeeded || 1
     };
-    this.projects.push(newProject);
-    return newProject;
+
+    const result = await db.insert(projects).values(newProject).returning();
+    return result[0];
   }
 
   async getProject(id: number): Promise<Project | undefined> {
-    return this.projects.find(project => project.id === id);
+    const results = await db.select().from(projects).where(eq(projects.id, id));
+    return results[0];
   }
 
   async getAllProjects(): Promise<Project[]> {
-    return this.projects;
+    return await db.select().from(projects);
   }
 
   async updateProject(id: number, updates: Partial<Project>): Promise<Project | undefined> {
-    const index = this.projects.findIndex(project => project.id === id);
-    if (index === -1) return undefined;
-    
-    this.projects[index] = { ...this.projects[index], ...updates };
-    return this.projects[index];
+    const result = await db.update(projects)
+        .set(updates)
+        .where(eq(projects.id, id))
+        .returning();
+
+    return result[0];
   }
 
   async requestToJoinProject(projectId: number, userId: number): Promise<Project | undefined> {
@@ -202,7 +171,7 @@ export class MemStorage implements IStorage {
     if (!project) return undefined;
 
     const joinRequests = project.joinRequests || [];
-    
+
     // Check if user already requested to join
     if (joinRequests.includes(userId)) {
       return project;
@@ -220,7 +189,7 @@ export class MemStorage implements IStorage {
 
     const joinRequests = project.joinRequests || [];
     const members = project.members || [];
-    
+
     // Check if user is in join requests
     if (!joinRequests.includes(userId)) {
       return project;
@@ -238,7 +207,7 @@ export class MemStorage implements IStorage {
     if (!project) return undefined;
 
     const joinRequests = project.joinRequests || [];
-    
+
     // Check if user is in join requests
     if (!joinRequests.includes(userId)) {
       return project;
@@ -250,33 +219,35 @@ export class MemStorage implements IStorage {
     });
   }
 
+  // Discussions
   async createDiscussion(discussion: Omit<Discussion, "id">): Promise<Discussion> {
-    const newDiscussion: Discussion = {
+    const newDiscussion = {
       ...discussion,
-      id: this.nextId.discussions++,
       upvotes: discussion.upvotes || 0,
       upvotedBy: discussion.upvotedBy || [],
       category: discussion.category || "general",
       createdAt: discussion.createdAt || new Date().toISOString()
     };
-    this.discussions.push(newDiscussion);
-    return newDiscussion;
+
+    const result = await db.insert(discussions).values(newDiscussion).returning();
+    return result[0];
   }
 
   async getDiscussion(id: number): Promise<Discussion | undefined> {
-    return this.discussions.find(discussion => discussion.id === id);
+    const results = await db.select().from(discussions).where(eq(discussions.id, id));
+    return results[0];
   }
 
   async getAllDiscussions(): Promise<Discussion[]> {
-    return this.discussions;
+    return await db.select().from(discussions);
   }
-  
+
   async upvoteDiscussion(id: number, userId: number): Promise<Discussion | undefined> {
     const discussion = await this.getDiscussion(id);
     if (!discussion) return undefined;
-    
+
     const upvotedBy = discussion.upvotedBy || [];
-    
+
     // Check if user already upvoted
     if (upvotedBy.includes(userId)) {
       // Remove upvote
@@ -293,37 +264,40 @@ export class MemStorage implements IStorage {
       });
     }
   }
-  
+
   private async updateDiscussion(id: number, updates: Partial<Discussion>): Promise<Discussion | undefined> {
-    const index = this.discussions.findIndex(discussion => discussion.id === id);
-    if (index === -1) return undefined;
-    
-    this.discussions[index] = { ...this.discussions[index], ...updates };
-    return this.discussions[index];
+    const result = await db.update(discussions)
+        .set(updates)
+        .where(eq(discussions.id, id))
+        .returning();
+
+    return result[0];
   }
-  
+
+  // Replies
   async createReply(reply: Omit<Reply, "id">): Promise<Reply> {
-    const newReply: Reply = {
+    const newReply = {
       ...reply,
-      id: this.nextId.replies++,
       upvotes: reply.upvotes || 0,
       upvotedBy: reply.upvotedBy || [],
       createdAt: reply.createdAt || new Date().toISOString()
     };
-    this.replies.push(newReply);
-    return newReply;
+
+    const result = await db.insert(replies).values(newReply).returning();
+    return result[0];
   }
-  
+
   async getRepliesByDiscussion(discussionId: number): Promise<Reply[]> {
-    return this.replies.filter(reply => reply.discussionId === discussionId);
+    return await db.select().from(replies).where(eq(replies.discussionId, discussionId));
   }
-  
+
   async upvoteReply(id: number, userId: number): Promise<Reply | undefined> {
-    const reply = this.replies.find(r => r.id === id);
-    if (!reply) return undefined;
-    
+    const replyResults = await db.select().from(replies).where(eq(replies.id, id));
+    if (replyResults.length === 0) return undefined;
+
+    const reply = replyResults[0];
     const upvotedBy = reply.upvotedBy || [];
-    
+
     // Check if user already upvoted
     if (upvotedBy.includes(userId)) {
       // Remove upvote
@@ -340,51 +314,49 @@ export class MemStorage implements IStorage {
       });
     }
   }
-  
+
   private async updateReply(id: number, updates: Partial<Reply>): Promise<Reply | undefined> {
-    const index = this.replies.findIndex(reply => reply.id === id);
-    if (index === -1) return undefined;
-    
-    this.replies[index] = { ...this.replies[index], ...updates };
-    return this.replies[index];
+    const result = await db.update(replies)
+        .set(updates)
+        .where(eq(replies.id, id))
+        .returning();
+
+    return result[0];
   }
 
-  // Get all users for networking
-  async getAllUsers(): Promise<User[]> {
-    return this.users;
-  }
-
-  // Create an invitation
+  // Invitations
   async createInvitation(invitation: Omit<Invitation, "id" | "status" | "createdAt">): Promise<Invitation> {
-    const fullInvitation: Invitation = {
+    const fullInvitation = {
       ...invitation,
-      id: this.nextId.invitations++,
       status: "pending",
       message: invitation.message || null,
       createdAt: new Date().toISOString(),
     };
-    
-    this.invitations.push(fullInvitation);
-    return fullInvitation;
+
+    const result = await db.insert(invitations).values(fullInvitation).returning();
+    return result[0];
   }
 
-  // Get invitations for a user (both sent and received)
   async getInvitationsByUser(userId: number): Promise<Invitation[]> {
-    return this.invitations.filter(
-      inv => inv.recipientId === userId || inv.senderId === userId
+    return await db.select().from(invitations).where(
+        or(
+            eq(invitations.recipientId, userId),
+            eq(invitations.senderId, userId)
+        )
     );
   }
 
-  // Respond to an invitation (accept or decline)
   async respondToInvitation(id: number, status: "accepted" | "declined"): Promise<Invitation | undefined> {
-    const index = this.invitations.findIndex(inv => inv.id === id);
-    if (index === -1) return undefined;
-    
-    this.invitations[index] = { ...this.invitations[index], status };
-    
+    const result = await db.update(invitations)
+        .set({ status })
+        .where(eq(invitations.id, id))
+        .returning();
+
+    if (result.length === 0) return undefined;
+
     // If accepted, add the user to the project members
     if (status === "accepted") {
-      const invitation = this.invitations[index];
+      const invitation = result[0];
       const project = await this.getProject(invitation.projectId);
       if (project) {
         const members = project.members || [];
@@ -395,43 +367,45 @@ export class MemStorage implements IStorage {
         }
       }
     }
-    
-    return this.invitations[index];
+
+    return result[0];
   }
 
-  // Create a connection request
+  // Connection Requests
   async createConnectionRequest(request: Omit<ConnectionRequest, "id" | "status" | "createdAt">): Promise<ConnectionRequest> {
-    const fullRequest: ConnectionRequest = {
+    const fullRequest = {
       ...request,
-      id: this.nextId.connectionRequests++,
       status: "pending",
       createdAt: new Date().toISOString(),
     };
-    
-    this.connectionRequests.push(fullRequest);
-    return fullRequest;
+
+    const result = await db.insert(connectionRequests).values(fullRequest).returning();
+    return result[0];
   }
 
-  // Get connection requests for a user (both sent and received)
   async getConnectionRequestsByUser(userId: number): Promise<ConnectionRequest[]> {
-    return this.connectionRequests.filter(
-      req => req.recipientId === userId || req.senderId === userId
+    return await db.select().from(connectionRequests).where(
+        or(
+            eq(connectionRequests.recipientId, userId),
+            eq(connectionRequests.senderId, userId)
+        )
     );
   }
 
-  // Respond to a connection request (accept or decline)
   async respondToConnectionRequest(id: number, status: "accepted" | "declined"): Promise<ConnectionRequest | undefined> {
-    const index = this.connectionRequests.findIndex(req => req.id === id);
-    if (index === -1) return undefined;
-    
-    this.connectionRequests[index] = { ...this.connectionRequests[index], status };
-    
+    const result = await db.update(connectionRequests)
+        .set({ status })
+        .where(eq(connectionRequests.id, id))
+        .returning();
+
+    if (result.length === 0) return undefined;
+
     // If accepted, add users to each other's connections
     if (status === "accepted") {
-      const request = this.connectionRequests[index];
+      const request = result[0];
       const sender = await this.getUser(request.senderId);
       const recipient = await this.getUser(request.recipientId);
-      
+
       if (sender && recipient) {
         // Add recipient to sender's connections if not already there
         if (!sender.connections?.includes(request.recipientId)) {
@@ -439,7 +413,7 @@ export class MemStorage implements IStorage {
             connections: [...(sender.connections || []), request.recipientId]
           });
         }
-        
+
         // Add sender to recipient's connections if not already there
         if (!recipient.connections?.includes(request.senderId)) {
           await this.updateUser(recipient.id, {
@@ -448,133 +422,133 @@ export class MemStorage implements IStorage {
         }
       }
     }
-    
-    return this.connectionRequests[index];
+
+    return result[0];
   }
 
-  // Create a message between users
+  // Messages
   async createMessage(message: Omit<Message, "id" | "createdAt">): Promise<Message> {
-    const newMessage: Message = {
+    const newMessage = {
       ...message,
-      id: this.nextId.messages++,
       createdAt: new Date().toISOString(),
     };
-    
-    this.messages.push(newMessage);
-    return newMessage;
+
+    const result = await db.insert(messages).values(newMessage).returning();
+    return result[0];
   }
 
-  // Get messages between two users
   async getMessagesBetweenUsers(user1Id: number, user2Id: number): Promise<Message[]> {
-    return this.messages.filter(
-      msg => 
-        (msg.senderId === user1Id && msg.recipientId === user2Id) ||
-        (msg.senderId === user2Id && msg.recipientId === user1Id)
-    ).sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
-  }
-  
-  async getAllMessages(): Promise<Message[]> {
-    return this.messages;
-  }
-  
-  async markMessageAsRead(messageId: number): Promise<Message | undefined> {
-    const index = this.messages.findIndex(msg => msg.id === messageId);
-    if (index === -1) return undefined;
-    
-    this.messages[index] = { ...this.messages[index], read: true };
-    return this.messages[index];
+    return await db.select().from(messages).where(
+        or(
+            and(
+                eq(messages.senderId, user1Id),
+                eq(messages.recipientId, user2Id)
+            ),
+            and(
+                eq(messages.senderId, user2Id),
+                eq(messages.recipientId, user1Id)
+            )
+        )
+    ).orderBy(asc(messages.createdAt));
   }
 
-  // Create a chat group
+  async getAllMessages(): Promise<Message[]> {
+    return await db.select().from(messages);
+  }
+
+  async markMessageAsRead(messageId: number): Promise<Message | undefined> {
+    const result = await db.update(messages)
+        .set({ read: true })
+        .where(eq(messages.id, messageId))
+        .returning();
+
+    return result[0];
+  }
+
+  // Chat Groups
   async createChatGroup(group: Omit<ChatGroup, "id" | "createdAt">): Promise<ChatGroup> {
-    const newGroup: ChatGroup = {
+    const newGroup = {
       ...group,
-      id: this.nextId.chatGroups++,
       createdAt: new Date().toISOString(),
     };
-    
-    this.chatGroups.push(newGroup);
-    return newGroup;
+
+    const result = await db.insert(chatGroups).values(newGroup).returning();
+    return result[0];
   }
 
-  // Get chat groups that a user is a member of
   async getChatGroupsByUser(userId: number): Promise<ChatGroup[]> {
-    return this.chatGroups.filter(
-      group => (group.members || []).includes(userId)
-    );
+    // We need to filter groups where the userId is in the members array
+    const allGroups = await db.select().from(chatGroups);
+    return allGroups.filter(group => (group.members || []).includes(userId));
   }
 
-  // Get a chat group by ID
   async getChatGroup(id: number): Promise<ChatGroup | undefined> {
-    return this.chatGroups.find(group => group.id === id);
+    const results = await db.select().from(chatGroups).where(eq(chatGroups.id, id));
+    return results[0];
   }
 
-  // Add a user to a chat group
   async addUserToChatGroup(groupId: number, userId: number): Promise<ChatGroup | undefined> {
     const group = await this.getChatGroup(groupId);
     if (!group) return undefined;
-    
+
     const members = group.members || [];
-    
+
     // Check if user is already in the group
     if (members.includes(userId)) {
       return group;
     }
-    
+
     // Add user to the group
-    const updatedGroup = {
-      ...group,
-      members: [...members, userId]
-    };
-    
-    const index = this.chatGroups.findIndex(g => g.id === groupId);
-    this.chatGroups[index] = updatedGroup;
-    
-    return updatedGroup;
+    const updatedMembers = [...members, userId];
+
+    const result = await db.update(chatGroups)
+        .set({ members: updatedMembers })
+        .where(eq(chatGroups.id, groupId))
+        .returning();
+
+    return result[0];
   }
 
-  // Remove a user from a chat group
   async removeUserFromChatGroup(groupId: number, userId: number): Promise<ChatGroup | undefined> {
     const group = await this.getChatGroup(groupId);
     if (!group) return undefined;
-    
+
     const members = group.members || [];
-    
+
     // Check if user is in the group
     if (!members.includes(userId)) {
       return group;
     }
-    
+
     // Remove user from the group
-    const updatedGroup = {
-      ...group,
-      members: members.filter((id: number) => id !== userId)
-    };
-    
-    const index = this.chatGroups.findIndex(g => g.id === groupId);
-    this.chatGroups[index] = updatedGroup;
-    
-    return updatedGroup;
+    const updatedMembers = members.filter((id: number) => id !== userId);
+
+    const result = await db.update(chatGroups)
+        .set({ members: updatedMembers })
+        .where(eq(chatGroups.id, groupId))
+        .returning();
+
+    return result[0];
   }
 
-  // Create a message in a chat group
+  // Group Messages
   async createGroupMessage(message: Omit<GroupMessage, "id" | "createdAt">): Promise<GroupMessage> {
-    const newMessage: GroupMessage = {
+    const newMessage = {
       ...message,
-      id: this.nextId.groupMessages++,
       createdAt: new Date().toISOString(),
     };
-    
-    this.groupMessages.push(newMessage);
-    return newMessage;
+
+    const result = await db.insert(groupMessages).values(newMessage).returning();
+    return result[0];
   }
 
-  // Get messages for a chat group
   async getMessagesByChatGroup(groupId: number): Promise<GroupMessage[]> {
-    return this.groupMessages.filter(
-      msg => msg.groupId === groupId
-    ).sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+    return await db.select()
+        .from(groupMessages)
+        .where(eq(groupMessages.groupId, groupId))
+        .orderBy(asc(groupMessages.createdAt));
   }
 }
 
-export const storage = new MemStorage();
+// Replace the MemStorage instance with a DrizzleStorage instance
+export const storage = new DrizzleStorage();

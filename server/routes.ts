@@ -3,6 +3,9 @@ import { createServer, type Server } from "http";
 import WebSocket, { WebSocketServer } from "ws";
 import { setupAuth } from "./auth";
 import { storage } from "./storage";
+import { db } from "./db";
+import { eq } from "drizzle-orm";
+import { users } from "@shared/schema";
 import { 
   insertProjectSchema, 
   insertDiscussionSchema, 
@@ -31,6 +34,81 @@ export function registerRoutes(app: Express): Server {
     if (!updatedUser) return res.sendStatus(404);
 
     res.json(updatedUser);
+  });
+
+  //debug
+  // Test endpoint to verify database read operations
+  app.get("/api/test-db-read", async (req, res) => {
+    try {
+      const users = await db.query.users.findMany({
+        limit: 5
+      });
+      console.log("DB Read Test Result:", users);
+      res.json({ success: true, data: users });
+    } catch (error) {
+      console.error("DB read test error:", error);
+      res.status(500).json({ success: false, error: String(error) });
+    }
+  });
+
+  // Test endpoint to verify database write operations
+  app.post("/api/test-db-write", async (req, res) => {
+    try {
+      console.log("Starting test write operation");
+      const testUser = {
+        username: `test-user-${Date.now()}`,
+        password: "test-password"
+      };
+
+      const result = await db.insert(users).values(testUser);
+      console.log("DB Write Test Result:", result);
+
+      // Verify the user was actually written by reading it back
+      const insertedUser = await db.query.users.findFirst({
+        where: eq(users.username, testUser.username)
+      });
+      console.log("Inserted user found:", insertedUser);
+
+      res.json({
+        success: true,
+        writeResult: result,
+        readBack: insertedUser
+      });
+    } catch (error) {
+      console.error("DB write test error:", error);
+      res.status(500).json({ success: false, error: String(error) });
+    }
+  });
+  // Test endpoint with explicit transaction
+  app.post("/api/test-db-transaction", async (req, res) => {
+    try {
+      console.log("Starting transaction test");
+      const testUser = {
+        username: `transaction-test-${Date.now()}`,
+        password: "test-password"
+      };
+
+      const result = await db.transaction(async (tx) => {
+        const insertResult = await tx.insert(users).values(testUser);
+        console.log("Transaction insert result:", insertResult);
+        return insertResult;
+      });
+
+      // Verify the transaction was committed
+      const insertedUser = await db.query.users.findFirst({
+        where: eq(users.username, testUser.username)
+      });
+      console.log("Transaction user found:", insertedUser);
+
+      res.json({
+        success: true,
+        transactionResult: result,
+        readBack: insertedUser
+      });
+    } catch (error) {
+      console.error("Transaction test error:", error);
+      res.status(500).json({ success: false, error: String(error) });
+    }
   });
 
   // Project routes
@@ -247,31 +325,31 @@ export function registerRoutes(app: Express): Server {
       isConnected
     });
   });
-  
+
   app.get("/api/invitations", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
-    
+
     const invitations = await storage.getInvitationsByUser(req.user.id);
     res.json(invitations);
   });
-  
+
   app.post("/api/invitations", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
-    
+
     try {
       const validated = insertInvitationSchema.parse(req.body);
-      
+
       // Check if they're already connected or have a pending request
       const sentInvitations = await storage.getInvitationsByUser(req.user.id);
       const alreadySent = sentInvitations.some(
-        invitation => invitation.recipientId === validated.recipientId && 
+        invitation => invitation.recipientId === validated.recipientId &&
                       (invitation.status === "pending" || invitation.status === "accepted")
       );
-      
+
       if (alreadySent) {
         return res.status(400).json({ message: "Connection request already sent or users already connected" });
       }
-      
+
       // Create the invitation
       const invitation = await storage.createInvitation({
         recipientId: validated.recipientId,
@@ -279,14 +357,14 @@ export function registerRoutes(app: Express): Server {
         message: validated.message ?? null,
         senderId: req.user.id,
       });
-      
+
       res.status(201).json(invitation);
     } catch (error) {
       console.error("Invitation creation error:", error);
       res.status(400).json({ message: "Invalid invitation data" });
     }
   });
-  
+
   app.post("/api/invitations/:id/respond", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     
