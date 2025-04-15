@@ -4,8 +4,10 @@ import { getXAIResponse, getXAISkillSuggestions } from "./xai";
 // Deepseek AI API integration
 const DEEPSEEK_API_ENDPOINT = "https://api.deepseek.com/v1";
 const DEEPSEEK_API_KEY = process.env.DEEPSEEK_API_KEY;
-const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
 const XAI_API_KEY = process.env.XAI_API_KEY;
+
+const OPENAI_API_KEY = "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";
+
 
 // Sample responses for demo mode - unified across providers
 const sampleResponses = [
