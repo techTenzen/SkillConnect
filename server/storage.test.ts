@@ -196,14 +196,14 @@ export class TestStorage implements IStorage {
 
   async getInvitationsByUser(userId: number): Promise<Invitation[]> {
     return this.invitations.filter(
-      (i) => i.userId === userId || i.senderId === userId
+        (i) => i.recipientId === userId || i.senderId === userId
     );
   }
 
   async respondToInvitation(id: number, status: "accepted" | "declined"): Promise<Invitation | undefined> {
     const invitation = this.invitations.find((i) => i.id === id);
     if (!invitation) return undefined;
-    
+
     invitation.status = status;
     return invitation;
   }
@@ -221,30 +221,30 @@ export class TestStorage implements IStorage {
 
   async getConnectionRequestsByUser(userId: number): Promise<ConnectionRequest[]> {
     return this.connectionRequests.filter(
-      (r) => r.senderId === userId || r.receiverId === userId
+        (r) => r.senderId === userId || r.receiverId === userId
     );
   }
 
   async respondToConnectionRequest(id: number, status: "accepted" | "declined"): Promise<ConnectionRequest | undefined> {
     const request = this.connectionRequests.find((r) => r.id === id);
     if (!request) return undefined;
-    
+
     request.status = status;
-    
+
     // If accepted, add connection to both users
     if (status === "accepted") {
       const sender = await this.getUser(request.senderId);
       const receiver = await this.getUser(request.receiverId);
-      
+
       if (sender && !sender.connections.includes(request.receiverId)) {
         sender.connections.push(request.receiverId);
       }
-      
+
       if (receiver && !receiver.connections.includes(request.senderId)) {
         receiver.connections.push(request.senderId);
       }
     }
-    
+
     return request;
   }
 
@@ -260,12 +260,12 @@ export class TestStorage implements IStorage {
 
   async getMessagesBetweenUsers(user1Id: number, user2Id: number): Promise<Message[]> {
     return this.messages.filter(
-      (m) => 
-        (m.senderId === user1Id && m.receiverId === user2Id) ||
-        (m.senderId === user2Id && m.receiverId === user1Id)
+        (m) =>
+            (m.senderId === user1Id && m.receiverId === user2Id) ||
+            (m.senderId === user2Id && m.receiverId === user1Id)
     ).sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
   }
-  
+
   async getAllMessages(): Promise<Message[]> {
     return this.messages;
   }
@@ -273,7 +273,7 @@ export class TestStorage implements IStorage {
   async markMessageAsRead(messageId: number): Promise<Message | undefined> {
     const index = this.messages.findIndex(msg => msg.id === messageId);
     if (index === -1) return undefined;
-    
+
     this.messages[index] = { ...this.messages[index], read: true };
     return this.messages[index];
   }
@@ -290,7 +290,7 @@ export class TestStorage implements IStorage {
 
   async getChatGroupsByUser(userId: number): Promise<ChatGroup[]> {
     return this.chatGroups.filter(
-      (g) => g.memberIds.includes(userId)
+        (g) => g.memberIds.includes(userId)
     );
   }
 
@@ -301,20 +301,20 @@ export class TestStorage implements IStorage {
   async addUserToChatGroup(groupId: number, userId: number): Promise<ChatGroup | undefined> {
     const group = await this.getChatGroup(groupId);
     if (!group) return undefined;
-    
+
     if (!group.memberIds.includes(userId)) {
       group.memberIds.push(userId);
     }
-    
+
     return group;
   }
 
   async removeUserFromChatGroup(groupId: number, userId: number): Promise<ChatGroup | undefined> {
     const group = await this.getChatGroup(groupId);
     if (!group) return undefined;
-    
+
     group.memberIds = group.memberIds.filter((id) => id !== userId);
-    
+
     return group;
   }
 
@@ -330,7 +330,7 @@ export class TestStorage implements IStorage {
 
   async getMessagesByChatGroup(groupId: number): Promise<GroupMessage[]> {
     return this.groupMessages.filter(
-      (m) => m.chatGroupId === groupId
+        (m) => m.chatGroupId === groupId
     ).sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
   }
 }

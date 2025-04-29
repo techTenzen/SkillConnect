@@ -242,30 +242,51 @@ export function registerRoutes(app: Express): Server {
     const invitations = await storage.getInvitationsByUser(req.user.id);
     res.json(invitations);
   });
-  
+
   app.post("/api/invitations", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
-    
+
     try {
       const validated = insertInvitationSchema.parse(req.body);
-      
+
       // Check if they're already connected or have a pending request
-      const sentInvitations = await storage.getInvitationsByUser(req.user.id);
-      const alreadySent = sentInvitations.some(
-        invitation => invitation.recipientId === validated.recipientId && 
-                      (invitation.status === "pending" || invitation.status === "accepted")
+      const allInvitations = await storage.getInvitationsByUser(req.user.id);
+
+      // Check if current user has already sent a request to the recipient
+      const alreadySentByMe = allInvitations.some(
+          invitation => invitation.recipientId === validated.recipientId &&
+              (invitation.status === "pending" || invitation.status === "accepted")
       );
-      
-      if (alreadySent) {
-        return res.status(400).json({ message: "Connection request already sent or users already connected" });
+
+      // Check if recipient has already sent a request to the current user
+      const alreadySentToMe = allInvitations.some(
+          invitation => invitation.senderId === validated.recipientId &&
+              invitation.recipientId === req.user.id &&
+              (invitation.status === "pending" || invitation.status === "accepted")
+      );
+
+      if (alreadySentByMe) {
+        return res.status(400).json({
+          message: "Connection request already sent",
+          code: "ALREADY_REQUESTED"
+        });
       }
-      
+
+      if (alreadySentToMe) {
+        return res.status(409).json({
+          message: "User has already sent you a request",
+          code: "ALREADY_REQUESTED"
+        });
+      }
+
       // Add the sender ID and set status and created date
       const invitation = await storage.createInvitation({
-        ...validated,
+        recipientId: validated.recipientId,
+        projectId: validated.projectId,
+        message: validated.message || null,
         senderId: req.user.id,
       });
-      
+
       res.status(201).json(invitation);
     } catch (error) {
       console.error("Invitation creation error:", error);

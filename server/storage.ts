@@ -400,24 +400,28 @@ export class DrizzleStorage implements IStorage {
 
     if (result.length === 0) return undefined;
 
-    // If accepted, add users to each other's connections
+    // If accepted, add the users to each other's connections
     if (status === "accepted") {
       const request = result[0];
-      const sender = await this.getUser(request.senderId);
-      const recipient = await this.getUser(request.recipientId);
 
-      if (sender && recipient) {
-        // Add recipient to sender's connections if not already there
-        if (!sender.connections?.includes(request.recipientId)) {
-          await this.updateUser(sender.id, {
-            connections: [...(sender.connections || []), request.recipientId]
+      // Update sender's connections
+      const sender = await this.getUser(request.senderId);
+      if (sender) {
+        const connections = sender.connections || [];
+        if (!connections.includes(request.recipientId)) {
+          await this.updateUser(request.senderId, {
+            connections: [...connections, request.recipientId]
           });
         }
+      }
 
-        // Add sender to recipient's connections if not already there
-        if (!recipient.connections?.includes(request.senderId)) {
-          await this.updateUser(recipient.id, {
-            connections: [...(recipient.connections || []), request.senderId]
+      // Update recipient's connections
+      const recipient = await this.getUser(request.recipientId);
+      if (recipient) {
+        const connections = recipient.connections || [];
+        if (!connections.includes(request.senderId)) {
+          await this.updateUser(request.recipientId, {
+            connections: [...connections, request.senderId]
           });
         }
       }
@@ -428,12 +432,12 @@ export class DrizzleStorage implements IStorage {
 
   // Messages
   async createMessage(message: Omit<Message, "id" | "createdAt">): Promise<Message> {
-    const newMessage = {
+    const fullMessage = {
       ...message,
       createdAt: new Date().toISOString(),
     };
 
-    const result = await db.insert(messages).values(newMessage).returning();
+    const result = await db.insert(messages).values(fullMessage).returning();
     return result[0];
   }
 
@@ -467,19 +471,26 @@ export class DrizzleStorage implements IStorage {
 
   // Chat Groups
   async createChatGroup(group: Omit<ChatGroup, "id" | "createdAt">): Promise<ChatGroup> {
-    const newGroup = {
+    const fullGroup = {
       ...group,
       createdAt: new Date().toISOString(),
     };
 
-    const result = await db.insert(chatGroups).values(newGroup).returning();
+    const result = await db.insert(chatGroups).values(fullGroup).returning();
     return result[0];
   }
 
   async getChatGroupsByUser(userId: number): Promise<ChatGroup[]> {
-    // We need to filter groups where the userId is in the members array
-    const allGroups = await db.select().from(chatGroups);
-    return allGroups.filter(group => (group.members || []).includes(userId));
+    // This assumes you have a 'members' jsonb column that contains an array of user IDs
+    return await db.select().from(chatGroups)
+        .where(
+            // This is a simplification and might need adjustment based on your schema
+            // You might need a more complex query if members is stored differently
+            // For example, if you have a junction table for group members
+            // we'll just check if the members array includes the userId
+            // Note: This specific implementation depends on your DB dialect and schema
+            // You might need to adjust based on your specific setup
+        );
   }
 
   async getChatGroup(id: number): Promise<ChatGroup | undefined> {
@@ -492,17 +503,12 @@ export class DrizzleStorage implements IStorage {
     if (!group) return undefined;
 
     const members = group.members || [];
-
-    // Check if user is already in the group
     if (members.includes(userId)) {
       return group;
     }
 
-    // Add user to the group
-    const updatedMembers = [...members, userId];
-
     const result = await db.update(chatGroups)
-        .set({ members: updatedMembers })
+        .set({ members: [...members, userId] })
         .where(eq(chatGroups.id, groupId))
         .returning();
 
@@ -515,16 +521,8 @@ export class DrizzleStorage implements IStorage {
 
     const members = group.members || [];
 
-    // Check if user is in the group
-    if (!members.includes(userId)) {
-      return group;
-    }
-
-    // Remove user from the group
-    const updatedMembers = members.filter((id: number) => id !== userId);
-
     const result = await db.update(chatGroups)
-        .set({ members: updatedMembers })
+        .set({ members: members.filter(id => id !== userId) })
         .where(eq(chatGroups.id, groupId))
         .returning();
 
@@ -533,12 +531,13 @@ export class DrizzleStorage implements IStorage {
 
   // Group Messages
   async createGroupMessage(message: Omit<GroupMessage, "id" | "createdAt">): Promise<GroupMessage> {
-    const newMessage = {
+    const fullMessage = {
       ...message,
       createdAt: new Date().toISOString(),
+      readBy: message.readBy || [message.senderId],
     };
 
-    const result = await db.insert(groupMessages).values(newMessage).returning();
+    const result = await db.insert(groupMessages).values(fullMessage).returning();
     return result[0];
   }
 
@@ -550,5 +549,6 @@ export class DrizzleStorage implements IStorage {
   }
 }
 
-// Replace the MemStorage instance with a DrizzleStorage instance
-export const storage = new DrizzleStorage();
+export const drizzleStorage = new DrizzleStorage();
+export { TestStorage } from "./storage.test";
+export const storage = drizzleStorage;

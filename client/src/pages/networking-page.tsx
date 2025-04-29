@@ -23,19 +23,19 @@ interface UserCardProps {
 
 function UserCard({ user, onConnect, isConnecting, sentInvitations }: UserCardProps) {
   const { user: currentUser } = useAuth();
-  
+
   // Don't show the current user
   if (user.id === currentUser?.id) return null;
-  
+
   // Get user initials for avatar fallback
   const initials = user.username.substring(0, 2).toUpperCase();
-  
+
   // Check if users are already connected or have a pending request
   const isAlreadyConnected = currentUser?.connections?.includes(user.id);
-  
+
   // Check if there's a pending invitation to this user
   const hasPendingRequest = sentInvitations?.some((inv: Invitation) => inv.recipientId === user.id);
-  
+
   // Generate a specialized field description based on user skills
   let specialization = "Student at VIT-AP";
   if (user.skills) {
@@ -48,10 +48,10 @@ function UserCard({ user, onConnect, isConnecting, sentInvitations }: UserCardPr
       specialization = "Information systems student interested in database design and management.";
     }
   }
-  
+
   return (
     <Card className="w-full hover:shadow-md transition-shadow bg-purple-950 text-white border-none">
-      <CardContent className="pt-6 flex flex-col items-center cursor-pointer" 
+      <CardContent className="pt-6 flex flex-col items-center cursor-pointer"
         onClick={() => {
           window.location.href = `/users/${user.id}`;
         }}
@@ -61,10 +61,10 @@ function UserCard({ user, onConnect, isConnecting, sentInvitations }: UserCardPr
             {initials}
           </div>
         </div>
-        
+
         <h3 className="font-medium text-lg mb-1">{user.username}</h3>
         <p className="text-sm text-gray-300 text-center mb-3 px-4">{specialization}</p>
-        
+
         {user.skills && Object.keys(user.skills).length > 0 && (
           <div className="flex flex-wrap gap-1 mb-3 justify-center">
             {Object.entries(user.skills).slice(0, 3).map(([skill]) => (
@@ -82,7 +82,7 @@ function UserCard({ user, onConnect, isConnecting, sentInvitations }: UserCardPr
       </CardContent>
       <CardFooter className="flex justify-center pb-4">
         {isAlreadyConnected ? (
-          <Button 
+          <Button
             disabled={true}
             className="w-full bg-green-600 hover:bg-green-700 cursor-default"
           >
@@ -90,7 +90,7 @@ function UserCard({ user, onConnect, isConnecting, sentInvitations }: UserCardPr
             Connected
           </Button>
         ) : hasPendingRequest ? (
-          <Button 
+          <Button
             disabled={true}
             className="w-full bg-blue-600 hover:bg-blue-700 cursor-default"
           >
@@ -98,11 +98,11 @@ function UserCard({ user, onConnect, isConnecting, sentInvitations }: UserCardPr
             Request Sent
           </Button>
         ) : (
-          <Button 
+          <Button
             onClick={(e) => {
               e.stopPropagation(); // Prevent navigating to profile
               onConnect(user.id);
-            }} 
+            }}
             disabled={isConnecting}
             className="w-full bg-purple-600 hover:bg-purple-700"
           >
@@ -130,29 +130,29 @@ interface MessageCardProps {
 function MessageCard({ message, sender, receiver, currentUserId }: MessageCardProps) {
   const isMyMessage = message.senderId === currentUserId;
   const otherUser = isMyMessage ? receiver : sender;
-  
+
   // Get user initials for avatar fallback
   const initials = otherUser ? otherUser.username.substring(0, 2).toUpperCase() : "??";
-  
+
   // Get the username to display
-  const displayName = otherUser ? 
-    otherUser.username 
+  const displayName = otherUser ?
+    otherUser.username
     : `User #${isMyMessage ? message.recipientId : message.senderId}`;
-  
+
   // Format timestamp
   const timestamp = new Date(message.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-  
+
   const handleViewProfile = () => {
     if (otherUser) {
       window.location.href = `/users/${otherUser.id}`;
     }
   };
-  
+
   return (
     <div className={`flex items-start mb-4 ${isMyMessage ? 'justify-end' : 'justify-start'}`}>
       {!isMyMessage && (
-        <div 
-          className="cursor-pointer mr-2" 
+        <div
+          className="cursor-pointer mr-2"
           onClick={handleViewProfile}
         >
           <div className="bg-purple-600 h-10 w-10 rounded-full flex items-center justify-center text-white text-base font-semibold">
@@ -190,21 +190,21 @@ interface InvitationCardProps {
 function InvitationCard({ invitation, user, onAccept, onDecline, isResponding }: InvitationCardProps) {
   // Get user initials for avatar fallback
   const initials = user ? user.username.substring(0, 2).toUpperCase() : "??";
-  
+
   // Use the actual username
   const username = user ? user.username : `User #${invitation.senderId}`;
-  
+
   const handleViewProfile = () => {
     if (user) {
       window.location.href = `/users/${invitation.senderId}`;
     }
   };
-  
+
   return (
     <div className="bg-gray-900 rounded-lg p-4 mb-4">
       <div className="flex items-center">
-        <div 
-          className="cursor-pointer" 
+        <div
+          className="cursor-pointer"
           onClick={handleViewProfile}
         >
           <div className="bg-purple-600 h-12 w-12 rounded-full flex items-center justify-center text-white text-lg font-bold">
@@ -218,31 +218,31 @@ function InvitationCard({ invitation, user, onAccept, onDecline, isResponding }:
             </h3>
             <span className="text-gray-400 text-sm ml-2">wants to connect with you</span>
           </div>
-          
+
           {invitation.message && (
             <p className="text-sm mt-1 text-gray-300 italic">"{invitation.message}"</p>
           )}
-          
+
           <div className="mt-2 flex gap-2">
-            <Button 
-              size="sm" 
-              variant="destructive" 
+            <Button
+              size="sm"
+              variant="destructive"
               onClick={(e) => {
                 e.stopPropagation();
                 onDecline(invitation.id);
-              }} 
+              }}
               disabled={isResponding}
               className="bg-transparent border border-gray-600 hover:bg-gray-800 text-gray-300"
             >
               Decline
             </Button>
-            <Button 
-              size="sm" 
-              variant="default" 
+            <Button
+              size="sm"
+              variant="default"
               onClick={(e) => {
                 e.stopPropagation();
                 onAccept(invitation.id);
-              }} 
+              }}
               disabled={isResponding}
               className="bg-purple-600 hover:bg-purple-700 text-white"
             >
@@ -264,7 +264,7 @@ export default function NetworkingPage() {
   const [filteredUsers, setFilteredUsers] = useState<Omit<User, "password">[]>([]);
   const [selectedUserId, setSelectedUserId] = useState<number | null>(null);
   const [newMessage, setNewMessage] = useState("");
-  
+
   // Fetch all users
   const { data: users = [], isLoading: isLoadingUsers } = useQuery<Omit<User, "password">[]>({
     queryKey: ["/api/users"],
@@ -280,7 +280,7 @@ export default function NetworkingPage() {
       }
     },
   });
-  
+
   // Fetch user's invitations
   const { data: invitations = [], isLoading: isLoadingInvitations } = useQuery<Invitation[]>({
     queryKey: ["/api/invitations"],
@@ -298,7 +298,24 @@ export default function NetworkingPage() {
     // Enable invitations query
     enabled: true,
   });
-  
+
+  console.log("Current user:", user);
+  console.log("Invitations:", invitations);
+// Add this in the useQuery for invitations:
+  useQuery({
+    queryKey: ["/api/invitations"],
+    queryFn: async () => {
+      try {
+        const response = await apiRequest("GET", "/api/invitations");
+        console.log("Raw invitations response:", response);
+        return response;
+      } catch (error) {
+        console.error("Error fetching invitations:", error);
+        return [];
+      }
+    }
+  });
+
   // Fetch messages for the selected user
   const { data: messages = [], isLoading: isLoadingMessages } = useQuery<Message[]>({
     queryKey: ["/api/messages", selectedUserId],
@@ -315,7 +332,7 @@ export default function NetworkingPage() {
     },
     enabled: Boolean(selectedUserId) && Boolean(user),
   });
-  
+
   // Send message mutation
   const sendMessageMutation = useMutation({
     mutationFn: async (content: string) => {
@@ -340,18 +357,18 @@ export default function NetworkingPage() {
       });
     },
   });
-  
+
   // Create connection request mutation
   const connectMutation = useMutation({
     mutationFn: async (recipientId: number) => {
       if (!user) throw new Error("You must be logged in to send connection requests");
-      
+
       const response = await apiRequest("POST", "/api/connection-requests", {
         recipientId,
         message: "I'd like to connect with you!"
         // No need to send senderId as the server will use the authenticated user's ID
       });
-      
+
       // Return the full response so we can check the status code
       return {
         status: response.status,
@@ -364,8 +381,8 @@ export default function NetworkingPage() {
         // Show a friendly toast instead of an error
         toast({
           title: "Already Connected",
-          description: result.data.status === 'already_connected' 
-            ? "You're already connected with this user" 
+          description: result.data.status === 'already_connected'
+            ? "You're already connected with this user"
             : "You already have a pending connection request with this user",
           variant: "default",
         });
@@ -377,7 +394,7 @@ export default function NetworkingPage() {
           description: "The user will be notified of your request",
         });
       }
-      
+
       // Always invalidate these queries to update the UI
       queryClient.invalidateQueries({ queryKey: ["/api/connection-requests"] });
       queryClient.invalidateQueries({ queryKey: ["/api/invitations"] });
@@ -390,7 +407,7 @@ export default function NetworkingPage() {
       });
     },
   });
-  
+
   // Accept invitation mutation
   const acceptMutation = useMutation({
     mutationFn: async (id: number) => {
@@ -415,7 +432,7 @@ export default function NetworkingPage() {
       });
     },
   });
-  
+
   // Decline invitation mutation
   const declineMutation = useMutation({
     mutationFn: async (id: number) => {
@@ -439,17 +456,17 @@ export default function NetworkingPage() {
       });
     },
   });
-  
+
   // Get pending invitations (received)
   const pendingInvitations = invitations.filter(
     (inv: Invitation) => inv.recipientId === user?.id && inv.status === "pending"
   );
-  
+
   // Get sent invitations (outgoing)
   const sentInvitations = invitations.filter(
     (inv: Invitation) => inv.senderId === user?.id && inv.status === "pending"
   );
-  
+
   // Search and filter users
   useEffect(() => {
     if (!users.length || !searchQuery.trim()) {
@@ -461,48 +478,48 @@ export default function NetworkingPage() {
     const filtered = users.filter(u => {
       // Don't include current user
       if (u.id === user?.id) return false;
-      
+
       if (searchBy === "username") {
-        return u.username.toLowerCase().includes(query) || 
+        return u.username.toLowerCase().includes(query) ||
                (u.bio && u.bio.toLowerCase().includes(query));
       } else if (searchBy === "skills") {
         if (!u.skills) return false;
-        
+
         // Check if any skill matches the query
-        return Object.keys(u.skills).some(skill => 
+        return Object.keys(u.skills).some(skill =>
           skill.toLowerCase().includes(query)
         );
       }
       return false;
     });
-    
+
     setFilteredUsers(filtered);
   }, [users, searchQuery, searchBy, user?.id]);
-  
+
   // Find user data for each invitation
   const findUserById = (userId: number) => {
     return users.find(u => u.id === userId);
   };
-  
+
   if (!user) return null;
-  
+
   return (
     <>
       <NavBar />
       <div className="min-h-screen bg-gray-950 text-white">
         <div className="container py-8">
           <h1 className="text-3xl font-bold mb-8 text-white">Networking</h1>
-        
+
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
             <TabsList className="grid w-full grid-cols-3 mb-8 bg-purple-900">
-              <TabsTrigger 
-                value="people" 
+              <TabsTrigger
+                value="people"
                 className="data-[state=active]:bg-purple-700 data-[state=active]:text-white text-gray-200"
               >
                 People
               </TabsTrigger>
-              <TabsTrigger 
-                value="invitations" 
+              <TabsTrigger
+                value="invitations"
                 className="data-[state=active]:bg-purple-700 data-[state=active]:text-white text-gray-200 relative"
               >
                 Invitations
@@ -512,14 +529,14 @@ export default function NetworkingPage() {
                   </Badge>
                 )}
               </TabsTrigger>
-              <TabsTrigger 
-                value="messages" 
+              <TabsTrigger
+                value="messages"
                 className="data-[state=active]:bg-purple-700 data-[state=active]:text-white text-gray-200"
               >
                 Messages
               </TabsTrigger>
             </TabsList>
-            
+
             <TabsContent value="people">
               <div className="mb-6">
                 <div className="flex gap-2 items-center mb-4">
@@ -536,8 +553,8 @@ export default function NetworkingPage() {
                     <Button
                       variant={searchBy === "username" ? "default" : "outline"}
                       size="sm"
-                      className={searchBy === "username" 
-                        ? "bg-purple-600 hover:bg-purple-700 text-white" 
+                      className={searchBy === "username"
+                        ? "bg-purple-600 hover:bg-purple-700 text-white"
                         : "text-gray-300 border-gray-600 hover:bg-gray-800"}
                       onClick={() => setSearchBy("username")}
                     >
@@ -546,8 +563,8 @@ export default function NetworkingPage() {
                     <Button
                       variant={searchBy === "skills" ? "default" : "outline"}
                       size="sm"
-                      className={searchBy === "skills" 
-                        ? "bg-purple-600 hover:bg-purple-700 text-white" 
+                      className={searchBy === "skills"
+                        ? "bg-purple-600 hover:bg-purple-700 text-white"
                         : "text-gray-300 border-gray-600 hover:bg-gray-800"}
                       onClick={() => setSearchBy("skills")}
                     >
@@ -556,7 +573,7 @@ export default function NetworkingPage() {
                   </div>
                 </div>
               </div>
-              
+
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
                 {isLoadingUsers ? (
                   <div className="col-span-full flex justify-center py-12">
@@ -579,7 +596,7 @@ export default function NetworkingPage() {
                 )}
               </div>
             </TabsContent>
-            
+
             <TabsContent value="invitations">
               <div className="space-y-4">
                 {isLoadingInvitations ? (
@@ -607,7 +624,7 @@ export default function NetworkingPage() {
                         ))}
                       </>
                     )}
-                    
+
                     {sentInvitations.length > 0 && (
                       <div className="mt-8">
                         <h3 className="text-xl font-medium mb-4 text-white">Sent Invitations</h3>
@@ -644,25 +661,25 @@ export default function NetworkingPage() {
                 )}
               </div>
             </TabsContent>
-            
+
             <TabsContent value="messages">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 {/* User list */}
                 <div className="bg-gray-900 rounded-lg p-4">
                   <h3 className="text-lg font-medium mb-4 text-gray-200">Messages</h3>
-                  
+
                   <div className="space-y-2 max-h-[500px] overflow-y-auto pr-2">
                     {users.filter(u => u.id !== user?.id).map(otherUser => {
                       const isSelected = selectedUserId === otherUser.id;
                       const initials = otherUser.username.substring(0, 2).toUpperCase();
-                      
+
                       // Count unread messages from this user
                       const unreadCount = messages.filter(
                         m => m.senderId === otherUser.id && !m.read
                       ).length;
-                      
+
                       return (
-                        <div 
+                        <div
                           key={otherUser.id}
                           className={`flex items-center p-2 rounded-md cursor-pointer ${
                             isSelected ? 'bg-purple-700' : 'hover:bg-gray-800'
@@ -696,7 +713,7 @@ export default function NetworkingPage() {
                     })}
                   </div>
                 </div>
-                
+
                 {/* Messages */}
                 <div className="md:col-span-2 bg-gray-900 rounded-lg p-4 flex flex-col">
                   {selectedUserId ? (
@@ -709,7 +726,7 @@ export default function NetworkingPage() {
                           {findUserById(selectedUserId)?.username || `User #${selectedUserId}`}
                         </h3>
                       </div>
-                      
+
                       <div className="flex-1 overflow-y-auto mb-4 space-y-2 max-h-[340px]">
                         {isLoadingMessages ? (
                           <div className="flex justify-center py-8">
@@ -731,7 +748,7 @@ export default function NetworkingPage() {
                           ))
                         )}
                       </div>
-                      
+
                       <div className="mt-auto">
                         <div className="flex gap-2">
                           <Textarea
@@ -740,7 +757,7 @@ export default function NetworkingPage() {
                             value={newMessage}
                             onChange={(e) => setNewMessage(e.target.value)}
                           />
-                          <Button 
+                          <Button
                             className="self-end bg-purple-600 hover:bg-purple-700 text-white"
                             disabled={!newMessage.trim() || sendMessageMutation.isPending}
                             onClick={() => {
