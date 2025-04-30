@@ -4,9 +4,6 @@ var __export = (target, all) => {
     __defProp(target, name, { get: all[name], enumerable: true });
 };
 
-// server/index.ts
-import express2 from "express";
-
 // server/routes.ts
 import { createServer } from "http";
 import WebSocket, { WebSocketServer } from "ws";
@@ -837,7 +834,7 @@ async function comparePasswords(supplied, stored) {
   const suppliedBuf = await scryptAsync(supplied, salt, 64);
   return timingSafeEqual(hashedBuf, suppliedBuf);
 }
-function setupAuth(app2) {
+function setupAuth(app) {
   const sessionSettings = {
     secret: process.env.DATABASE_URL || "skillconnect-secret-key",
     // Providing a fallback secret
@@ -845,17 +842,17 @@ function setupAuth(app2) {
     saveUninitialized: false,
     store: storage.sessionStore,
     cookie: {
-      secure: app2.get("env") === "production",
+      secure: app.get("env") === "production",
       maxAge: 1e3 * 60 * 60 * 24
       // 24 hours
     }
   };
-  if (app2.get("env") === "production") {
-    app2.set("trust proxy", 1);
+  if (app.get("env") === "production") {
+    app.set("trust proxy", 1);
   }
-  app2.use(session3(sessionSettings));
-  app2.use(passport.initialize());
-  app2.use(passport.session());
+  app.use(session3(sessionSettings));
+  app.use(passport.initialize());
+  app.use(passport.session());
   passport.use(
     new LocalStrategy(async (username, password, done) => {
       try {
@@ -881,7 +878,7 @@ function setupAuth(app2) {
       done(err);
     }
   });
-  app2.post("/api/register", async (req, res, next) => {
+  app.post("/api/register", async (req, res, next) => {
     try {
       const existingUser = await storage.getUserByUsername(req.body.username);
       if (existingUser) {
@@ -900,7 +897,7 @@ function setupAuth(app2) {
       res.status(500).json({ message: error.message });
     }
   });
-  app2.post("/api/login", (req, res, next) => {
+  app.post("/api/login", (req, res, next) => {
     passport.authenticate("local", (err, user, info) => {
       if (err) return next(err);
       if (!user) {
@@ -912,13 +909,13 @@ function setupAuth(app2) {
       });
     })(req, res, next);
   });
-  app2.post("/api/logout", (req, res, next) => {
+  app.post("/api/logout", (req, res, next) => {
     req.logout((err) => {
       if (err) return next(err);
       res.sendStatus(200);
     });
   });
-  app2.get("/api/user", (req, res) => {
+  app.get("/api/user", (req, res) => {
     if (!req.isAuthenticated()) {
       return res.status(401).json({ message: "Not authenticated" });
     }
@@ -1240,15 +1237,15 @@ async function getSkillSuggestions2(skills) {
 }
 
 // server/routes.ts
-function registerRoutes(app2) {
-  setupAuth(app2);
-  app2.patch("/api/profile", async (req, res) => {
+function registerRoutes(app) {
+  setupAuth(app);
+  app.patch("/api/profile", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     const updatedUser = await storage.updateUser(req.user.id, req.body);
     if (!updatedUser) return res.sendStatus(404);
     res.json(updatedUser);
   });
-  app2.get("/api/test-db-read", async (req, res) => {
+  app.get("/api/test-db-read", async (req, res) => {
     try {
       const users2 = await db.query.users.findMany({
         limit: 5
@@ -1260,7 +1257,7 @@ function registerRoutes(app2) {
       res.status(500).json({ success: false, error: String(error) });
     }
   });
-  app2.post("/api/test-db-write", async (req, res) => {
+  app.post("/api/test-db-write", async (req, res) => {
     try {
       console.log("Starting test write operation");
       const testUser = {
@@ -1283,7 +1280,7 @@ function registerRoutes(app2) {
       res.status(500).json({ success: false, error: String(error) });
     }
   });
-  app2.post("/api/test-db-transaction", async (req, res) => {
+  app.post("/api/test-db-transaction", async (req, res) => {
     try {
       console.log("Starting transaction test");
       const testUser = {
@@ -1309,16 +1306,16 @@ function registerRoutes(app2) {
       res.status(500).json({ success: false, error: String(error) });
     }
   });
-  app2.get("/api/projects", async (req, res) => {
+  app.get("/api/projects", async (req, res) => {
     const projects2 = await storage.getAllProjects();
     res.json(projects2);
   });
-  app2.get("/api/projects/:id", async (req, res) => {
+  app.get("/api/projects/:id", async (req, res) => {
     const project = await storage.getProject(parseInt(req.params.id));
     if (!project) return res.sendStatus(404);
     res.json(project);
   });
-  app2.post("/api/projects", async (req, res) => {
+  app.post("/api/projects", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     try {
       const validated = insertProjectSchema.parse(req.body);
@@ -1344,7 +1341,7 @@ function registerRoutes(app2) {
       res.status(400).json({ message: "Invalid project data" });
     }
   });
-  app2.post("/api/projects/:id/join", async (req, res) => {
+  app.post("/api/projects/:id/join", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     const projectId = parseInt(req.params.id);
     const userId = req.user.id;
@@ -1352,7 +1349,7 @@ function registerRoutes(app2) {
     if (!project) return res.sendStatus(404);
     res.json(project);
   });
-  app2.post("/api/projects/:id/accept", async (req, res) => {
+  app.post("/api/projects/:id/accept", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     const projectId = parseInt(req.params.id);
     const project = await storage.getProject(projectId);
@@ -1362,7 +1359,7 @@ function registerRoutes(app2) {
     const updatedProject = await storage.acceptJoinRequest(projectId, userId);
     res.json(updatedProject);
   });
-  app2.post("/api/projects/:id/reject", async (req, res) => {
+  app.post("/api/projects/:id/reject", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     const projectId = parseInt(req.params.id);
     const project = await storage.getProject(projectId);
@@ -1372,16 +1369,16 @@ function registerRoutes(app2) {
     const updatedProject = await storage.rejectJoinRequest(projectId, userId);
     res.json(updatedProject);
   });
-  app2.get("/api/discussions", async (req, res) => {
+  app.get("/api/discussions", async (req, res) => {
     const discussions2 = await storage.getAllDiscussions();
     res.json(discussions2);
   });
-  app2.get("/api/discussions/:id", async (req, res) => {
+  app.get("/api/discussions/:id", async (req, res) => {
     const discussion = await storage.getDiscussion(parseInt(req.params.id));
     if (!discussion) return res.sendStatus(404);
     res.json(discussion);
   });
-  app2.post("/api/discussions", async (req, res) => {
+  app.post("/api/discussions", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     try {
       const validated = insertDiscussionSchema.parse(req.body);
@@ -1398,7 +1395,7 @@ function registerRoutes(app2) {
       res.status(400).json({ message: "Invalid discussion data" });
     }
   });
-  app2.post("/api/discussions/:id/upvote", async (req, res) => {
+  app.post("/api/discussions/:id/upvote", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     const discussionId = parseInt(req.params.id);
     const userId = req.user.id;
@@ -1406,12 +1403,12 @@ function registerRoutes(app2) {
     if (!discussion) return res.sendStatus(404);
     res.json(discussion);
   });
-  app2.get("/api/discussions/:id/replies", async (req, res) => {
+  app.get("/api/discussions/:id/replies", async (req, res) => {
     const discussionId = parseInt(req.params.id);
     const replies2 = await storage.getRepliesByDiscussion(discussionId);
     res.json(replies2);
   });
-  app2.post("/api/discussions/:id/replies", async (req, res) => {
+  app.post("/api/discussions/:id/replies", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     const discussionId = parseInt(req.params.id);
     try {
@@ -1431,7 +1428,7 @@ function registerRoutes(app2) {
       res.status(400).json({ message: "Invalid reply data" });
     }
   });
-  app2.post("/api/replies/:id/upvote", async (req, res) => {
+  app.post("/api/replies/:id/upvote", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     const replyId = parseInt(req.params.id);
     const userId = req.user.id;
@@ -1439,13 +1436,13 @@ function registerRoutes(app2) {
     if (!reply) return res.sendStatus(404);
     res.json(reply);
   });
-  app2.get("/api/users", async (req, res) => {
+  app.get("/api/users", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     const users2 = await storage.getAllUsers();
     const sanitizedUsers = users2.map(({ password, ...user }) => user);
     res.json(sanitizedUsers);
   });
-  app2.get("/api/users/:id", async (req, res) => {
+  app.get("/api/users/:id", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     const userId = parseInt(req.params.id);
     const user = await storage.getUser(userId);
@@ -1467,12 +1464,12 @@ function registerRoutes(app2) {
       isConnected
     });
   });
-  app2.get("/api/invitations", async (req, res) => {
+  app.get("/api/invitations", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     const invitations3 = await storage.getInvitationsByUser(req.user.id);
     res.json(invitations3);
   });
-  app2.post("/api/invitations", async (req, res) => {
+  app.post("/api/invitations", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     try {
       const validated = insertInvitationSchema.parse(req.body);
@@ -1507,7 +1504,7 @@ function registerRoutes(app2) {
       res.status(400).json({ message: "Invalid invitation data" });
     }
   });
-  app2.get("/api/debug/invitations", async (req, res) => {
+  app.get("/api/debug/invitations", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     let allInvitations;
     try {
@@ -1522,7 +1519,7 @@ function registerRoutes(app2) {
       currentUserId: req.user.id
     });
   });
-  app2.post("/api/invitations/:id/respond", async (req, res) => {
+  app.post("/api/invitations/:id/respond", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     const invitationId = parseInt(req.params.id);
     const status = req.body.status;
@@ -1533,7 +1530,7 @@ function registerRoutes(app2) {
     if (!invitation) return res.sendStatus(404);
     res.json(invitation);
   });
-  app2.post("/api/chat", async (req, res) => {
+  app.post("/api/chat", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     try {
       if (!req.body.message) {
@@ -1548,7 +1545,7 @@ function registerRoutes(app2) {
       });
     }
   });
-  app2.post("/api/skill-suggestions", async (req, res) => {
+  app.post("/api/skill-suggestions", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     try {
       if (!req.body.skills || typeof req.body.skills !== "object") {
@@ -1563,12 +1560,12 @@ function registerRoutes(app2) {
       });
     }
   });
-  app2.get("/api/connection-requests", async (req, res) => {
+  app.get("/api/connection-requests", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     const requests = await storage.getConnectionRequestsByUser(req.user.id);
     res.json(requests);
   });
-  app2.post("/api/connection-requests", async (req, res) => {
+  app.post("/api/connection-requests", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     try {
       const validated = insertConnectionRequestSchema.parse(req.body);
@@ -1604,7 +1601,7 @@ function registerRoutes(app2) {
       res.status(400).json({ message: "Invalid connection request data" });
     }
   });
-  app2.post("/api/connection-requests/:id/respond", async (req, res) => {
+  app.post("/api/connection-requests/:id/respond", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     const requestId = parseInt(req.params.id);
     const status = req.body.status;
@@ -1615,7 +1612,7 @@ function registerRoutes(app2) {
     if (!request) return res.sendStatus(404);
     res.json(request);
   });
-  app2.get("/api/messages/unread", async (req, res) => {
+  app.get("/api/messages/unread", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     try {
       const allMessages = await storage.getAllMessages();
@@ -1628,7 +1625,7 @@ function registerRoutes(app2) {
       res.status(500).json({ error: "Failed to fetch unread messages" });
     }
   });
-  app2.get("/api/messages/:userId", async (req, res) => {
+  app.get("/api/messages/:userId", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     const otherUserId = parseInt(req.params.userId);
     const messages2 = await storage.getMessagesBetweenUsers(req.user.id, otherUserId);
@@ -1639,7 +1636,7 @@ function registerRoutes(app2) {
     }
     res.json(messages2);
   });
-  app2.post("/api/messages", async (req, res) => {
+  app.post("/api/messages", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     try {
       const validated = insertMessageSchema.parse(req.body);
@@ -1654,12 +1651,12 @@ function registerRoutes(app2) {
       res.status(400).json({ message: "Invalid message data" });
     }
   });
-  app2.get("/api/chat-groups", async (req, res) => {
+  app.get("/api/chat-groups", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     const groups = await storage.getChatGroupsByUser(req.user.id);
     res.json(groups);
   });
-  app2.get("/api/chat-groups/:id", async (req, res) => {
+  app.get("/api/chat-groups/:id", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     const groupId = parseInt(req.params.id);
     const group = await storage.getChatGroup(groupId);
@@ -1668,7 +1665,7 @@ function registerRoutes(app2) {
     if (!members.includes(req.user.id)) return res.sendStatus(403);
     res.json(group);
   });
-  app2.post("/api/chat-groups", async (req, res) => {
+  app.post("/api/chat-groups", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     try {
       const validated = insertChatGroupSchema.parse(req.body);
@@ -1685,7 +1682,7 @@ function registerRoutes(app2) {
       res.status(400).json({ message: "Invalid chat group data" });
     }
   });
-  app2.post("/api/chat-groups/:id/members", async (req, res) => {
+  app.post("/api/chat-groups/:id/members", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     const groupId = parseInt(req.params.id);
     const group = await storage.getChatGroup(groupId);
@@ -1695,7 +1692,7 @@ function registerRoutes(app2) {
     const updatedGroup = await storage.addUserToChatGroup(groupId, userId);
     res.json(updatedGroup);
   });
-  app2.delete("/api/chat-groups/:id/members/:userId", async (req, res) => {
+  app.delete("/api/chat-groups/:id/members/:userId", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     const groupId = parseInt(req.params.id);
     const group = await storage.getChatGroup(groupId);
@@ -1707,7 +1704,7 @@ function registerRoutes(app2) {
     const updatedGroup = await storage.removeUserFromChatGroup(groupId, userId);
     res.json(updatedGroup);
   });
-  app2.get("/api/chat-groups/:id/messages", async (req, res) => {
+  app.get("/api/chat-groups/:id/messages", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     const groupId = parseInt(req.params.id);
     const group = await storage.getChatGroup(groupId);
@@ -1717,7 +1714,7 @@ function registerRoutes(app2) {
     const messages2 = await storage.getMessagesByChatGroup(groupId);
     res.json(messages2);
   });
-  app2.post("/api/chat-groups/:id/messages", async (req, res) => {
+  app.post("/api/chat-groups/:id/messages", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     const groupId = parseInt(req.params.id);
     const group = await storage.getChatGroup(groupId);
@@ -1738,7 +1735,7 @@ function registerRoutes(app2) {
       res.status(400).json({ message: "Invalid group message data" });
     }
   });
-  const httpServer = createServer(app2);
+  const httpServer = createServer(app);
   const wss = new WebSocketServer({ server: httpServer, path: "/ws" });
   const clients = /* @__PURE__ */ new Map();
   wss.on("connection", (ws, req) => {
@@ -1830,152 +1827,6 @@ function registerRoutes(app2) {
   });
   return httpServer;
 }
-
-// server/vite.ts
-import express from "express";
-import fs from "fs";
-import path2, { dirname as dirname2 } from "path";
-import { fileURLToPath as fileURLToPath2 } from "url";
-import { createServer as createViteServer, createLogger } from "vite";
-
-// vite.config.ts
-import { defineConfig } from "vite";
-import react from "@vitejs/plugin-react";
-import themePlugin from "@replit/vite-plugin-shadcn-theme-json";
-import path, { dirname } from "path";
-import runtimeErrorOverlay from "@replit/vite-plugin-runtime-error-modal";
-import { fileURLToPath } from "url";
-var __filename = fileURLToPath(import.meta.url);
-var __dirname = dirname(__filename);
-var vite_config_default = defineConfig({
-  plugins: [react(), runtimeErrorOverlay(), themePlugin()],
-  resolve: {
-    alias: {
-      "@": path.resolve(__dirname, "client", "src"),
-      "@shared": path.resolve(__dirname, "shared")
-    }
-  },
-  root: path.resolve(__dirname, "client"),
-  build: {
-    outDir: path.resolve(__dirname, "dist", "public"),
-    emptyOutDir: true
-  }
-});
-
-// server/vite.ts
-import { nanoid } from "nanoid";
-var __filename2 = fileURLToPath2(import.meta.url);
-var __dirname2 = dirname2(__filename2);
-var viteLogger = createLogger();
-function log(message, source = "express") {
-  const formattedTime = (/* @__PURE__ */ new Date()).toLocaleTimeString("en-US", {
-    hour: "numeric",
-    minute: "2-digit",
-    second: "2-digit",
-    hour12: true
-  });
-  console.log(`${formattedTime} [${source}] ${message}`);
-}
-async function setupVite(app2, server) {
-  const serverOptions = {
-    middlewareMode: true,
-    hmr: { server },
-    allowedHosts: true
-  };
-  const vite = await createViteServer({
-    ...vite_config_default,
-    configFile: false,
-    customLogger: {
-      ...viteLogger,
-      error: (msg, options) => {
-        viteLogger.error(msg, options);
-        process.exit(1);
-      }
-    },
-    server: serverOptions,
-    appType: "custom"
-  });
-  app2.use(vite.middlewares);
-  app2.use("*", async (req, res, next) => {
-    const url = req.originalUrl;
-    try {
-      const clientTemplate = path2.resolve(
-        __dirname2,
-        "..",
-        "client",
-        "index.html"
-      );
-      let template = await fs.promises.readFile(clientTemplate, "utf-8");
-      template = template.replace(
-        `src="/src/main.tsx"`,
-        `src="/src/main.tsx?v=${nanoid()}"`
-      );
-      const page = await vite.transformIndexHtml(url, template);
-      res.status(200).set({ "Content-Type": "text/html" }).end(page);
-    } catch (e) {
-      vite.ssrFixStacktrace(e);
-      next(e);
-    }
-  });
-}
-function serveStatic(app2) {
-  const distPath = path2.resolve(process.cwd(), "dist/public");
-  if (!fs.existsSync(distPath)) {
-    throw new Error(
-      `Could not find the build directory: ${distPath}, make sure to build the client first`
-    );
-  }
-  app2.use(express.static(distPath));
-  app2.use("*", (_req, res) => {
-    res.sendFile(path2.resolve(distPath, "index.html"));
-  });
-}
-
-// server/index.ts
-import "dotenv/config";
-var app = express2();
-app.use(express2.json());
-app.use(express2.urlencoded({ extended: false }));
-console.log("\u{1F680} Connected to DB:", process.env.DATABASE_URL);
-app.use((req, res, next) => {
-  const start = Date.now();
-  const path3 = req.path;
-  let capturedJsonResponse = void 0;
-  const originalResJson = res.json;
-  res.json = function(bodyJson, ...args) {
-    capturedJsonResponse = bodyJson;
-    return originalResJson.apply(res, [bodyJson, ...args]);
-  };
-  res.on("finish", () => {
-    const duration = Date.now() - start;
-    if (path3.startsWith("/api")) {
-      let logLine = `${req.method} ${path3} ${res.statusCode} in ${duration}ms`;
-      if (capturedJsonResponse) {
-        logLine += ` :: ${JSON.stringify(capturedJsonResponse)}`;
-      }
-      if (logLine.length > 80) {
-        logLine = logLine.slice(0, 79) + "\u2026";
-      }
-      log(logLine);
-    }
-  });
-  next();
-});
-(async () => {
-  const server = registerRoutes(app);
-  app.use((err, _req, res, _next) => {
-    const status = err.status || err.statusCode || 500;
-    const message = err.message || "Internal Server Error";
-    res.status(status).json({ message });
-    throw err;
-  });
-  if (app.get("env") === "development") {
-    await setupVite(app, server);
-  } else {
-    serveStatic(app);
-  }
-  const PORT = process.env.PORT || 5e3;
-  server.listen(PORT, "0.0.0.0", () => {
-    log(`serving on port ${PORT}`);
-  });
-})();
+export {
+  registerRoutes
+};

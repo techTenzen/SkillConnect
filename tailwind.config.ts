@@ -11,83 +11,76 @@ export default {
         sm: "calc(var(--radius) - 4px)",
       },
       colors: {
-        background: "#FFFFFF",
-        foreground: "#212121",
+        background: "#121212", // Firebase dark background
+        foreground: "#FFFFFF", // Firebase dark foreground
         card: {
-          DEFAULT: "#FFFFFF",
-          foreground: "#212121",
+          DEFAULT: "#1E1E1E", // Using Firebase dark secondary as card
+          foreground: "#FFFFFF", // Firebase dark foreground
         },
         popover: {
-          DEFAULT: "#FFFFFF",
-          foreground: "#212121",
+          DEFAULT: "#1E1E1E", // Using Firebase dark secondary
+          foreground: "#FFFFFF", // Firebase dark foreground
         },
         primary: {
-          DEFAULT: "#FFA000", // base of the gradient
-          foreground: "#212121",
+          DEFAULT: "#F57C00", // Firebase dark primary base color
+          foreground: "#FFFFFF", // Firebase dark foreground
         },
         secondary: {
-          DEFAULT: "#F5F5F5",
-          foreground: "#212121",
+          DEFAULT: "#1E1E1E", // Firebase dark secondary
+          foreground: "#FFFFFF", // Firebase dark foreground
         },
         muted: {
-          DEFAULT: "#F5F5F5",
-          foreground: "#212121",
+          DEFAULT: "#2C2C2C", // Slightly lighter than background
+          foreground: "#A1A1A1", // Muted text for dark mode
         },
         accent: {
-          DEFAULT: "#FF8A65",
-          foreground: "#212121",
+          DEFAULT: "#FF8A65", // Firebase accent
+          foreground: "#121212", // Dark background for contrast
         },
         destructive: {
-          DEFAULT: "#E53935",
-          foreground: "#FFFFFF",
+          DEFAULT: "#E53935", // Firebase destructive
+          foreground: "#FFFFFF", // White text on destructive
         },
-        border: "#F5F5F5",
-        input: "#F5F5F5",
-        ring: "#FFA000",
+        border: "#333333", // Darker border for dark theme
+        input: "#2C2C2C", // Darker input for dark theme
+        ring: "#F57C00", // Using Firebase primary for ring focus
         chart: {
-          "1": "#FFA000",
-          "2": "#FFCA28",
-          "3": "#FF8A65",
-          "4": "#F5F5F5",
-          "5": "#E53935",
+          "1": "#F57C00", // Primary orange
+          "2": "#FFB300", // Secondary orange
+          "3": "#FF8A65", // Accent
+          "4": "#FFCA28", // Lighter orange
+          "5": "#E53935", // Destructive red
         },
         sidebar: {
-          DEFAULT: "#FFFFFF",
-          foreground: "#212121",
-          primary: "#FFA000",
-          "primary-foreground": "#212121",
-          accent: "#FF8A65",
-          "accent-foreground": "#212121",
-          border: "#F5F5F5",
-          ring: "#FFA000",
+          DEFAULT: "#1A1A1A", // Slightly darker than main background
+          foreground: "#FFFFFF", // Firebase dark foreground
+          primary: "#F57C00", // Firebase dark primary
+          "primary-foreground": "#FFFFFF", // White text on primary
+          accent: "#FF8A65", // Firebase accent
+          "accent-foreground": "#121212", // Dark text on accent
+          border: "#333333", // Dark border
+          ring: "#F57C00", // Firebase primary for focus
         },
       },
       keyframes: {
         "accordion-down": {
-          from: {
-            height: "0",
-          },
-          to: {
-            height: "var(--radix-accordion-content-height)",
-          },
+          from: { height: "0" },
+          to: { height: "var(--radix-accordion-content-height)" },
         },
         "accordion-up": {
-          from: {
-            height: "var(--radix-accordion-content-height)",
-          },
-          to: {
-            height: "0",
-          },
+          from: { height: "var(--radix-accordion-content-height)" },
+          to: { height: "0" },
         },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
       },
+      // Add CSS variables for gradient support
+      backgroundImage: {
+        "primary-gradient": "linear-gradient(90deg, #F57C00 0%, #FFB300 100%)",
+      },
     },
   },
-  plugins: [
-    require("tailwindcss-animate"),
-    require("@tailwindcss/typography"),
-  ],
+  plugins: [require("tailwindcss-animate"), require("@tailwindcss/typography")],
 } satisfies Config;

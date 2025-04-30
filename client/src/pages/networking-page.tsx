@@ -50,14 +50,14 @@ function UserCard({ user, onConnect, isConnecting, sentInvitations }: UserCardPr
   }
 
   return (
-    <Card className="w-full hover:shadow-md transition-shadow bg-purple-950 text-white border-none">
+    <Card className="w-full hover:shadow-md transition-shadow bg-[#121212] text-white border-none">
       <CardContent className="pt-6 flex flex-col items-center cursor-pointer"
         onClick={() => {
           window.location.href = `/users/${user.id}`;
         }}
       >
         <div className="flex justify-center mb-4">
-          <div className="bg-purple-500 w-14 h-14 rounded-full flex items-center justify-center text-white text-xl font-bold">
+          <div className="bg-[#F57C00] w-14 h-14 rounded-full flex items-center justify-center text-white text-xl font-bold">
             {initials}
           </div>
         </div>
@@ -68,12 +68,12 @@ function UserCard({ user, onConnect, isConnecting, sentInvitations }: UserCardPr
         {user.skills && Object.keys(user.skills).length > 0 && (
           <div className="flex flex-wrap gap-1 mb-3 justify-center">
             {Object.entries(user.skills).slice(0, 3).map(([skill]) => (
-              <Badge key={skill} variant="outline" className="text-xs bg-purple-800 text-white border-purple-600 hover:bg-purple-700">
+              <Badge key={skill} variant="outline" className="text-xs bg-[#1E1E1E] text-white border-[#F57C00] hover:bg-[#F57C00]">
                 {skill}
               </Badge>
             ))}
             {Object.keys(user.skills).length > 3 && (
-              <Badge variant="outline" className="text-xs bg-purple-800 text-white border-purple-600 hover:bg-purple-700">
+              <Badge variant="outline" className="text-xs bg-[#1E1E1E] text-white border-[#F57C00] hover:bg-[#F57C00]">
                 +{Object.keys(user.skills).length - 3} more
               </Badge>
             )}
@@ -104,7 +104,7 @@ function UserCard({ user, onConnect, isConnecting, sentInvitations }: UserCardPr
               onConnect(user.id);
             }}
             disabled={isConnecting}
-            className="w-full bg-purple-600 hover:bg-purple-700"
+            className="w-full bg-[#F57C00] hover:bg-[#F57C00]"
           >
             {isConnecting ? (
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -155,7 +155,7 @@ function MessageCard({ message, sender, receiver, currentUserId }: MessageCardPr
           className="cursor-pointer mr-2"
           onClick={handleViewProfile}
         >
-          <div className="bg-purple-600 h-10 w-10 rounded-full flex items-center justify-center text-white text-base font-semibold">
+          <div className="bg-[#F57C00] h-10 w-10 rounded-full flex items-center justify-center text-white text-base font-semibold">
             {initials}
           </div>
         </div>
@@ -168,7 +168,7 @@ function MessageCard({ message, sender, receiver, currentUserId }: MessageCardPr
             </span>
           </div>
         )}
-        <div className={`rounded-2xl px-3 py-2 ${isMyMessage ? 'bg-purple-700 text-white rounded-br-none' : 'bg-gray-800 text-white rounded-bl-none'}`}>
+        <div className={`rounded-2xl px-3 py-2 ${isMyMessage ? 'bg-[#F57C00] text-white rounded-br-none' : 'bg-gray-800 text-white rounded-bl-none'}`}>
           <p className="text-sm">{message.content}</p>
         </div>
         <div className="mt-1">
@@ -207,7 +207,7 @@ function InvitationCard({ invitation, user, onAccept, onDecline, isResponding }:
           className="cursor-pointer"
           onClick={handleViewProfile}
         >
-          <div className="bg-purple-600 h-12 w-12 rounded-full flex items-center justify-center text-white text-lg font-bold">
+          <div className="bg-[#F57C00] h-12 w-12 rounded-full flex items-center justify-center text-white text-lg font-bold">
             {initials}
           </div>
         </div>
@@ -244,7 +244,7 @@ function InvitationCard({ invitation, user, onAccept, onDecline, isResponding }:
                 onAccept(invitation.id);
               }}
               disabled={isResponding}
-              className="bg-purple-600 hover:bg-purple-700 text-white"
+              className="bg-[#F57C00] hover:bg-[#F57C00] text-white"
             >
               Accept
             </Button>
@@ -511,16 +511,16 @@ export default function NetworkingPage() {
           <h1 className="text-3xl font-bold mb-8 text-white">Networking</h1>
 
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-3 mb-8 bg-purple-900">
+            <TabsList className="grid w-full grid-cols-3 mb-8 bg-[#1A1A1A]">
               <TabsTrigger
                 value="people"
-                className="data-[state=active]:bg-purple-700 data-[state=active]:text-white text-gray-200"
+                className="data-[state=active]:bg-[#F57C00] data-[state=active]:text-white text-gray-200"
               >
                 People
               </TabsTrigger>
               <TabsTrigger
                 value="invitations"
-                className="data-[state=active]:bg-purple-700 data-[state=active]:text-white text-gray-200 relative"
+                className="data-[state=active]:bg-[#F57C00] data-[state=active]:text-white text-gray-200 relative"
               >
                 Invitations
                 {(pendingInvitations.length > 0 || sentInvitations.length > 0) && (
@@ -531,7 +531,7 @@ export default function NetworkingPage() {
               </TabsTrigger>
               <TabsTrigger
                 value="messages"
-                className="data-[state=active]:bg-purple-700 data-[state=active]:text-white text-gray-200"
+                className="data-[state=active]:bg-[#F57C00] data-[state=active]:text-white text-gray-200"
               >
                 Messages
               </TabsTrigger>
@@ -554,7 +554,7 @@ export default function NetworkingPage() {
                       variant={searchBy === "username" ? "default" : "outline"}
                       size="sm"
                       className={searchBy === "username"
-                        ? "bg-purple-600 hover:bg-purple-700 text-white"
+                        ? "bg-[#F57C00] hover:bg-[#F57C00] text-white"
                         : "text-gray-300 border-gray-600 hover:bg-gray-800"}
                       onClick={() => setSearchBy("username")}
                     >
@@ -564,7 +564,7 @@ export default function NetworkingPage() {
                       variant={searchBy === "skills" ? "default" : "outline"}
                       size="sm"
                       className={searchBy === "skills"
-                        ? "bg-purple-600 hover:bg-purple-700 text-white"
+                        ? "bg-[#F57C00] hover:bg-[#F57C00] text-white"
                         : "text-gray-300 border-gray-600 hover:bg-gray-800"}
                       onClick={() => setSearchBy("skills")}
                     >
@@ -577,7 +577,7 @@ export default function NetworkingPage() {
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
                 {isLoadingUsers ? (
                   <div className="col-span-full flex justify-center py-12">
-                    <Loader2 className="h-8 w-8 animate-spin text-purple-500" />
+                    <Loader2 className="h-8 w-8 animate-spin text-[#F57C00]" />
                   </div>
                 ) : filteredUsers.length === 0 ? (
                   <div className="col-span-full text-center py-12 text-gray-400">
@@ -601,7 +601,7 @@ export default function NetworkingPage() {
               <div className="space-y-4">
                 {isLoadingInvitations ? (
                   <div className="flex justify-center py-12">
-                    <Loader2 className="h-8 w-8 animate-spin text-purple-500" />
+                    <Loader2 className="h-8 w-8 animate-spin text-[#F57C00]" />
                   </div>
                 ) : pendingInvitations.length === 0 && sentInvitations.length === 0 ? (
                   <div className="text-center py-12 text-gray-400">
@@ -632,7 +632,7 @@ export default function NetworkingPage() {
                           <div className="bg-gray-900 rounded-lg p-4 mb-4" key={invitation.id}>
                             <div className="flex items-center">
                               <div className="cursor-pointer">
-                                <div className="bg-purple-600 h-12 w-12 rounded-full flex items-center justify-center text-white text-lg font-bold">
+                                <div className="bg-[#F57C00] h-12 w-12 rounded-full flex items-center justify-center text-white text-lg font-bold">
                                   {findUserById(invitation.recipientId)?.username.substring(0, 2).toUpperCase() || '??'}
                                 </div>
                               </div>
@@ -682,12 +682,12 @@ export default function NetworkingPage() {
                         <div
                           key={otherUser.id}
                           className={`flex items-center p-2 rounded-md cursor-pointer ${
-                            isSelected ? 'bg-purple-700' : 'hover:bg-gray-800'
+                            isSelected ? 'bg-[#F57C00]' : 'hover:bg-gray-800'
                           }`}
                           onClick={() => setSelectedUserId(otherUser.id)}
                         >
                           <div className="relative">
-                            <div className="bg-purple-600 h-10 w-10 rounded-full flex items-center justify-center text-white text-lg font-bold mr-3">
+                            <div className="bg-[#F57C00] h-10 w-10 rounded-full flex items-center justify-center text-white text-lg font-bold mr-3">
                               {initials}
                             </div>
                             {unreadCount > 0 && (
@@ -719,7 +719,7 @@ export default function NetworkingPage() {
                   {selectedUserId ? (
                     <>
                       <div className="flex items-center pb-4 border-b border-gray-800 mb-4">
-                        <div className="bg-purple-600 h-10 w-10 rounded-full flex items-center justify-center text-white text-lg font-bold mr-3">
+                        <div className="bg-[#F57C00] h-10 w-10 rounded-full flex items-center justify-center text-white text-lg font-bold mr-3">
                           {findUserById(selectedUserId)?.username.substring(0, 2).toUpperCase() || '??'}
                         </div>
                         <h3 className="text-lg font-medium text-white">
@@ -730,7 +730,7 @@ export default function NetworkingPage() {
                       <div className="flex-1 overflow-y-auto mb-4 space-y-2 max-h-[340px]">
                         {isLoadingMessages ? (
                           <div className="flex justify-center py-8">
-                            <Loader2 className="h-8 w-8 animate-spin text-purple-500" />
+                            <Loader2 className="h-8 w-8 animate-spin text-[#F57C00]" />
                           </div>
                         ) : messages.length === 0 ? (
                           <div className="text-center py-8 text-gray-400">
@@ -758,7 +758,7 @@ export default function NetworkingPage() {
                             onChange={(e) => setNewMessage(e.target.value)}
                           />
                           <Button
-                            className="self-end bg-purple-600 hover:bg-purple-700 text-white"
+                            className="self-end bg-[#F57C00] hover:bg-[#F57C00] text-white"
                             disabled={!newMessage.trim() || sendMessageMutation.isPending}
                             onClick={() => {
                               if (newMessage.trim()) {

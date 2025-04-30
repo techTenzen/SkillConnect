@@ -568,10 +568,10 @@ export default function ProjectsPage() {
                 {projects.map((project) => (
                   <motion.div key={project.id} variants={item}>
                     <Card 
-                      className="group hover:shadow-lg transition-shadow duration-200 cursor-pointer overflow-hidden border-purple-500/10 hover:border-purple-500/30"
+                      className="group hover:shadow-lg transition-shadow duration-200 cursor-pointer overflow-hidden border-[#F57C00]/10 hover:border-[#F57C00]/30"
                       onClick={() => navigate(`/projects/${project.id}`)}
                     >
-                      <div className="h-1 bg-gradient-to-r from-purple-500 to-indigo-500"></div>
+                      <div className="h-1 bg-gradient-to-r from-[#F57C00] to-indigo-500"></div>
                       <CardHeader>
                         <div className="flex justify-between items-start">
                           <div>
@@ -588,7 +588,7 @@ export default function ProjectsPage() {
                             <Button 
                               variant="outline" 
                               size="sm"
-                              className="text-xs bg-purple-500/10 hover:bg-purple-500/20 border-purple-500/20"
+                              className="text-xs bg-[#F57C00]/10 hover:bg-[#F57C00]/20 border-[#F57C00]/20"
                               onClick={(e) => {
                                 e.stopPropagation(); // Prevent card click when button is clicked
                                 navigate(`/projects/${project.id}`);
@@ -605,7 +605,7 @@ export default function ProjectsPage() {
                         </p>
                         <div className="flex flex-wrap gap-2 mb-4">
                           {project.skills?.slice(0, 3).map((skill) => (
-                            <Badge key={skill} variant="secondary" className="bg-purple-500/10 hover:bg-purple-500/20">
+                            <Badge key={skill} variant="secondary" className="bg-[#F57C00]/10 hover:bg-[#F57C00]/20">
                               {skill}
                             </Badge>
                           ))}
@@ -639,10 +639,10 @@ export default function ProjectsPage() {
                 {projects.map((project) => (
                   <motion.div key={project.id} variants={item}>
                     <Card 
-                      className="group hover:shadow-lg transition-shadow duration-200 cursor-pointer overflow-hidden border-purple-500/10 hover:border-purple-500/30"
+                      className="group hover:shadow-lg transition-shadow duration-200 cursor-pointer overflow-hidden border-[#F57C00]/10 hover:border-[#F57C00]/30"
                       onClick={() => navigate(`/projects/${project.id}`)}
                     >
-                      <div className="h-1 bg-gradient-to-r from-purple-500 to-indigo-500"></div>
+                      <div className="h-1 bg-gradient-to-r from-[#F57C00] to-indigo-500"></div>
                       <div className="flex flex-col md:flex-row items-start gap-4 p-4">
                         <div className="flex-1 min-w-0">
                           <div className="flex justify-between items-center mb-2">
@@ -659,7 +659,7 @@ export default function ProjectsPage() {
                           <p className="text-muted-foreground line-clamp-2 mb-2">{project.description}</p>
                           <div className="flex flex-wrap gap-2 mb-2">
                             {project.skills?.slice(0, 5).map((skill) => (
-                              <Badge key={skill} variant="secondary" className="bg-purple-500/10 hover:bg-purple-500/20">
+                              <Badge key={skill} variant="secondary" className="bg-[#F57C00]/10 hover:bg-[#F57C00]/20">
                                 {skill}
                               </Badge>
                             ))}
