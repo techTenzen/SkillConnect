@@ -33,7 +33,7 @@ export default function LandingPage() {
         transition={{ duration: 0.5 }}
       >
         <div className="container mx-auto px-4">
-          <h1 className="text-4xl md:text-6xl font-bold mb-6 bg-gradient-to-r from-purple-400 to-pink-400 text-transparent bg-clip-text">
+          <h1 className="text-4xl md:text-6xl font-bold mb-6 bg-gradient-to-r from-[#FF8A65] to-pink-400 text-transparent bg-clip-text">
             Connect, Collaborate and
             <br />
             Learn Together
@@ -43,7 +43,7 @@ export default function LandingPage() {
           </p>
           <div className="flex justify-center gap-4">
             <Link href="/auth?mode=register">
-              <Button size="lg" className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600">
+              <Button size="lg" className="bg-gradient-to-r from-[#F57C00] to-pink-500 hover:from-purple-600 hover:to-pink-600">
                 Get Started
               </Button>
             </Link>
@@ -66,7 +66,7 @@ export default function LandingPage() {
               whileInView={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.1 }}
             >
-              <Users className="h-12 w-12 text-purple-400 mb-4" />
+              <Users className="h-12 w-12 text-[#FF8A65] mb-4" />
               <h3 className="text-xl font-semibold mb-2">Find Peers</h3>
               <p className="text-muted-foreground">
                 Connect with students who share your interests and skills. Build lasting relationships and learn from each other.
@@ -79,7 +79,7 @@ export default function LandingPage() {
               whileInView={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2 }}
             >
-              <Handshake className="h-12 w-12 text-purple-400 mb-4" />
+              <Handshake className="h-12 w-12 text-[#FF8A65] mb-4" />
               <h3 className="text-xl font-semibold mb-2">Collaborate</h3>
               <p className="text-muted-foreground">
                 Work on exciting projects together. Share knowledge, skills, and create something amazing as a team.
@@ -92,7 +92,7 @@ export default function LandingPage() {
               whileInView={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.3 }}
             >
-              <LightbulbIcon className="h-12 w-12 text-purple-400 mb-4" />
+              <LightbulbIcon className="h-12 w-12 text-[#FF8A65] mb-4" />
               <h3 className="text-xl font-semibold mb-2">Get Help</h3>
               <p className="text-muted-foreground">
                 Access AI-powered assistance and peer support. Get answers to your questions and guidance when you need it.
