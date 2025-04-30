@@ -43,7 +43,7 @@ export default function LandingPage() {
           </p>
           <div className="flex justify-center gap-4">
             <Link href="/auth?mode=register">
-              <Button size="lg" className="bg-gradient-to-r from-[#F57C00] to-pink-500 hover:from-purple-600 hover:to-pink-600">
+              <Button size="lg" className="bg-gradient-to-r from-[#F57C00] to-pink-500 hover:from-red-600 hover:to-pink-[#F57C00]">
                 Get Started
               </Button>
             </Link>
