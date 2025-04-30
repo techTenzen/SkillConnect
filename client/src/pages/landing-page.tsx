@@ -32,10 +32,10 @@ export default function LandingPage() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
       >
-        <div className="container mx-auto px-4">
+        <div className="container mx-auto px-5">
           <h1 className="text-4xl md:text-6xl font-bold mb-6 bg-gradient-to-r from-[#FF8A65] to-pink-400 text-transparent bg-clip-text">
             Connect, Collaborate and
-            <br />
+
             Learn Together
           </h1>
           <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
